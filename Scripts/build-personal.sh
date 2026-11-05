@@ -11,6 +11,9 @@ command -v xcodebuild >/dev/null
 command -v python3 >/dev/null
 out=$(mktemp -d "$root/.build-personal-XXXXXXXX")
 baseline=${TENDELM_RESUME_UI_BASELINE:-}
+color_baseline=${TENDELM_UNDO_COLOR_BASELINE:-}
+[[ -z "$baseline" || -z "$color_baseline" ]] || { echo "Choose one baseline mode." >&2; exit 1; }
+[[ -z "$color_baseline" ]] || baseline=$color_baseline
 echo "Build logs and test results: $out"
 
 assert_idle() {
@@ -87,13 +90,34 @@ if [[ -n "$baseline" ]]; then
   # production code. Normal builds always run the complete selection below.
   [[ "$baseline" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid verified baseline." >&2; exit 1; }
   git cat-file -e "$baseline^{commit}" 2>/dev/null || git fetch --no-tags --depth=1 origin "$baseline"
-  git diff --exit-code "$baseline" HEAD -- . \
-    ':(exclude)TendelmUITests/PersonalEditionTests.swift' \
-    ':(exclude)Scripts/build-personal.sh' ':(exclude)codemagic.yaml'
-  echo "Reusing passed unit/interaction results from unchanged production source at $baseline."
+  if [[ -n "$color_baseline" ]]; then
+    # Reuse is restricted to the exact reviewed text-contrast correction. Any
+    # other app/test change refuses this short validation route.
+    git diff --exit-code "$baseline" HEAD -- . \
+      ':(exclude)Tendelm/Views/TimeSince/TimeSinceUndoToast.swift' \
+      ':(exclude)Scripts/build-personal.sh' ':(exclude)codemagic.yaml'
+    python3 - "$baseline" <<'PY'
+import pathlib, subprocess, sys
+path = "Tendelm/Views/TimeSince/TimeSinceUndoToast.swift"
+before = subprocess.check_output(["git", "show", f"{sys.argv[1]}:{path}"], text=True)
+line = '                        Label("Undo", systemImage: "arrow.uturn.backward")\n'
+assert before.count(line) == 1
+expected = before.replace(line, line + '                            .foregroundStyle(Color.kadoBackground)\n')
+assert pathlib.Path(path).read_text() == expected, "Only the exact Undo contrast fix may reuse this baseline"
+PY
+    echo "Reusing passed unit/unaffected UI results; verified exact Undo text-color-only change from $baseline."
+  else
+    git diff --exit-code "$baseline" HEAD -- . \
+      ':(exclude)TendelmUITests/PersonalEditionTests.swift' \
+      ':(exclude)Scripts/build-personal.sh' ':(exclude)codemagic.yaml'
+    echo "Reusing passed unit/interaction results from unchanged production source at $baseline."
+  fi
   run_xcode simulator-build build-for-testing -project Tendelm.xcodeproj -scheme Tendelm \
     -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath "$out/DerivedData" CODE_SIGNING_ALLOWED=NO
   ui_tests=(-only-testing:TendelmUITests/PersonalEditionTests/testChooseFutureDateThenEditAndRelaunch)
+  if [[ -n "$color_baseline" ]]; then
+    ui_tests=(-only-testing:TendelmUITests/PersonalEditionTests/testRecentUndoExpiresAndDoesNotWalkHistory)
+  fi
 else
   run_xcode unit-tests test -project Tendelm.xcodeproj -scheme Tendelm \
     -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath "$out/DerivedData" \

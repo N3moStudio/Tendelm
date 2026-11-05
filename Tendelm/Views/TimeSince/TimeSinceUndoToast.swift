@@ -13,6 +13,7 @@ private struct TimeSinceUndoToast: ViewModifier {
                 if let action {
                     Button(action: undo) {
                         Label("Undo", systemImage: "arrow.uturn.backward")
+                            .foregroundStyle(Color.kadoBackground)
                             .font(.subheadline.weight(.semibold))
                             .padding(.horizontal, 6)
                             .frame(minHeight: 32)
