@@ -153,11 +153,18 @@ nonisolated public enum ExternalHabitCSV {
                 latestNameDate[habitID] = date
             }
         }
-        let sorted = habits.values.map { habit in
-            var value = habit
-            value.completions = (daysByHabit[habit.id] ?? []).sorted { $0.date < $1.date }
-            return value
-        }.sorted { $0.name == $1.name ? $0.id.uuidString < $1.id.uuidString : $0.name < $1.name }
+        var sorted: [HabitBackup] = []
+        sorted.reserveCapacity(habits.count)
+        for var habit in habits.values {
+            var completions: [CompletionBackup] = daysByHabit[habit.id] ?? []
+            completions.sort { $0.date < $1.date }
+            habit.completions = completions
+            sorted.append(habit)
+        }
+        sorted.sort { left, right in
+            if left.name == right.name { return left.id.uuidString < right.id.uuidString }
+            return left.name < right.name
+        }
         return ExternalHabitImport(source: source, habits: sorted, skippedDays: skipped,
                                    quantityDays: quantities, usesNamesAsIdentity: usesNames)
     }
