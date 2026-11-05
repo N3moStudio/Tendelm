@@ -1,0 +1,24 @@
+{
+  "file": "C:\\Users\\naith\\Downloads\\Tendelm-1.0.0.ipa",
+  "bytes": 10269374,
+  "sha256": "7a74c8fbe95da9a871a3dfdf244ffff7ad50e5b2ae15e380b23c426361cefa61",
+  "version": "1.0.0",
+  "build": "1",
+  "minimum_os": "18.0",
+  "binaries": [
+    {
+      "bundle_id": "com.n3mostudio.tendelm",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "encrypted": false
+    },
+    {
+      "bundle_id": "com.n3mostudio.tendelm.TendelmWidgets",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "encrypted": false
+    }
+  ],
+  "provisioning": "No profile; personal signing required",
+  "zip_integrity": "passed"
+}

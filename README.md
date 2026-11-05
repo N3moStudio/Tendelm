@@ -13,6 +13,8 @@ A calm personal habit and time-since tracker for iPhone and iPad. Built from [Ka
 
 ## Personal build
 
+Version 1.0.0 (1) is built. See [validation and artifact evidence](docs/TENDELM-VALIDATION.md) and [actual simulator screenshots](docs/screenshots/tendelm). The delivered IPA is `C:\Users\naith\Downloads\Tendelm-1.0.0.ipa` and requires personal signing.
+
 - Local repository: `C:\Users\naith\Documents\GitHub\Tendelm`
 - Project: `Tendelm.xcodeproj`, scheme `Tendelm`; core module `Packages/TendelmCore`.
 - Bundle ID: `com.n3mostudio.tendelm`; widget: `com.n3mostudio.tendelm.TendelmWidgets`.
