@@ -38,6 +38,30 @@ public struct TimeSinceTracker: Identifiable, Hashable, Codable, Sendable {
         resets.append(TimeSinceReset(date: date))
     }
 
+    /// Backfill a real occurrence without replacing later history. An event
+    /// before the initial start also moves that baseline back to keep it valid.
+    @discardableResult
+    public mutating func recordPreviousReset(at date: Date, now: Date = .now) throws -> PreviousResetChange {
+        guard date.timeIntervalSince1970.isFinite, now.timeIntervalSince1970.isFinite,
+              date <= now else { throw TimeSinceError.resetMustBeInPast }
+        guard !resets.contains(where: { $0.date == date }) else { throw TimeSinceError.duplicateReset }
+        let event = TimeSinceReset(date: date)
+        let change = PreviousResetChange(reset: event, originalStart: startedAt, adjustedStart: min(startedAt, date))
+        startedAt = change.adjustedStart
+        resets.append(event)
+        return change
+    }
+
+    /// Undo the event just backfilled, not whichever event is newest by date.
+    public mutating func undoPreviousReset(_ change: PreviousResetChange) {
+        guard resets.contains(change.reset) else { return }
+        resets.removeAll { $0.id == change.reset.id }
+        if startedAt == change.adjustedStart,
+           resets.allSatisfy({ $0.date >= change.originalStart }) {
+            startedAt = change.originalStart
+        }
+    }
+
     public mutating func undoLastReset() {
         guard let last = orderedResets.last else { return }
         resets.removeAll { $0.id == last.id }
@@ -55,6 +79,14 @@ public struct TimeSinceTracker: Identifiable, Hashable, Codable, Sendable {
 public enum TimeSinceError: Error, Equatable, Sendable {
     case clockMovedBackwards
     case invalidTracker
+    case resetMustBeInPast
+    case duplicateReset
+}
+
+public struct PreviousResetChange: Hashable, Sendable {
+    public let reset: TimeSinceReset
+    public let originalStart: Date
+    public let adjustedStart: Date
 }
 
 /// A future start counts down; at its exact timestamp it becomes elapsed time.

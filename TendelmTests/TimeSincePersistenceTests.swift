@@ -12,6 +12,32 @@ struct TimeSincePersistenceTests {
             configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)).usingExplicitTestSaves()
     }
 
+    @Test("Backfilled history and its earlier baseline survive persistence and backups")
+    func previousResetRoundTrip() throws {
+        let container = try memoryStore()
+        var tracker = TimeSinceTracker(name: "Scrolling", startedAt: start)
+        try tracker.reset(at: start.addingTimeInterval(60))
+        let change = try tracker.recordPreviousReset(at: start.addingTimeInterval(-60), now: start.addingTimeInterval(120))
+        try TimeSinceStore().save(tracker, in: container.mainContext)
+        let fresh = ModelContext(container)
+        let saved = try #require(fresh.fetch(FetchDescriptor<TimeSinceRecord>()).first?.snapshot)
+        #expect(saved.orderedResets == tracker.orderedResets)
+        #expect(saved.startedAt == tracker.startedAt)
+        let document = try DefaultBackupExporter().export(from: container.mainContext)
+        let json = try DefaultBackupImporter().parse(data: DefaultBackupExporter().encode(document))
+        let csv = try CSVBackupCoder().decode(CSVBackupCoder().encode(document))
+        for decoded in [json, csv] {
+            let restored = try #require(decoded.timeSinceTrackers.first)
+            #expect(restored.orderedResets == tracker.orderedResets)
+            #expect(restored.startedAt == tracker.startedAt)
+        }
+        tracker.undoPreviousReset(change)
+        try TimeSinceStore().save(tracker, in: container.mainContext)
+        let reloaded = try #require(ModelContext(container).fetch(FetchDescriptor<TimeSinceRecord>()).first?.snapshot)
+        #expect(reloaded.startedAt == start)
+        #expect(reloaded.orderedResets.map(\.date) == [start.addingTimeInterval(60)])
+    }
+
     @Test("A future start persists exactly and survives both backup formats")
     func futureStartRoundTrip() throws {
         let container = try memoryStore()
