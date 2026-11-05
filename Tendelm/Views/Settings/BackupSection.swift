@@ -56,6 +56,13 @@ struct BackupSection: View {
                 Label("Import Data", systemImage: "square.and.arrow.down")
             }
             .disabled(isExporting)
+            NavigationLink {
+                ExternalImportView()
+            } label: {
+                Label("Import from another app", systemImage: "arrow.down.doc")
+            }
+            .disabled(isExporting)
+            .accessibilityIdentifier("externalImport.open")
         } header: {
             Text("Data")
                 .foregroundStyle(Color.kadoForegroundSecondary)

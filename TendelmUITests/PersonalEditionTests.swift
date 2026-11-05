@@ -2,6 +2,59 @@ import XCTest
 
 final class PersonalEditionTests: TendelmUITestCase {
     @MainActor
+    func testPreviousResetCancelSaveUndoAndRelaunch() {
+        var app = launchApp(seedProduction: true, seedTimeSince: true)
+        tapTab(.timeSince, in: app)
+        let detail = buttons("timeSince.detail.", in: app).firstMatch
+        XCTAssertTrue(detail.waitForExistence(timeout: 5))
+        let detailID = detail.identifier
+        detail.tap()
+        app.buttons["timeSince.detail.reset"].tap()
+        let before = app.staticTexts.matching(NSPredicate(format: "label == 'Reset logged'")).count
+        let previous = app.buttons["timeSince.detail.previous"]
+        XCTAssertTrue(previous.exists)
+        previous.tap()
+        XCTAssertTrue(app.datePickers["timeSince.previous.date"].waitForExistence(timeout: 5))
+        app.buttons["Cancel"].tap()
+        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label == 'Reset logged'")).count, before)
+        previous.tap()
+        photograph(app, "09-previous-reset-picker")
+        app.buttons["timeSince.previous.save"].tap()
+        XCTAssertTrue(previous.waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label == 'Reset logged'")).count, before + 1)
+        XCTAssertTrue(app.buttons["timeSince.detail.undo"].label.contains("Undo added reset"))
+        app.buttons["timeSince.detail.undo"].tap()
+        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label == 'Reset logged'")).count, before)
+        previous.tap()
+        app.buttons["timeSince.previous.save"].tap()
+        XCTAssertTrue(previous.waitForExistence(timeout: 5))
+        app.terminate()
+        app = launchApp(resetState: false)
+        tapTab(.timeSince, in: app)
+        app.buttons[detailID].tap()
+        XCTAssertTrue(app.buttons["timeSince.detail.previous"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label == 'Reset logged'")).count, before + 1)
+    }
+
+    @MainActor
+    func testExternalImportEntryAndHelp() {
+        let app = launchApp()
+        tapTab(.settings, in: app)
+        let entry = app.buttons["externalImport.open"]
+        for _ in 0..<5 {
+            if entry.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(entry.isHittable)
+        entry.tap()
+        XCTAssertTrue(app.buttons["externalImport.choose"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["externalImport.confirm"].exists)
+        app.buttons["Streaks"].tap()
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label == 'Streaks export help'")).firstMatch.exists)
+        photograph(app, "10-import-history")
+    }
+
+    @MainActor
     func testChooseFutureDateThenEditAndRelaunch() throws {
         var app = launchApp()
         tapTab(.timeSince, in: app)

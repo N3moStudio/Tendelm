@@ -1,7 +1,7 @@
 import SwiftUI
 import ThinkingOrbsKit
 
-/// Only appears while a real export is running. Decorative motion never drives work.
+/// Only appears while a real file operation is running. Decorative motion never drives work.
 struct TendelmProgressLabel: View {
     let title: LocalizedStringKey
     @Environment(\.scenePhase) private var scenePhase
