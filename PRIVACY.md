@@ -1,33 +1,7 @@
-# Kadō — Privacy Policy
+# Tendelm privacy
 
-Kadō does not collect any personal data.
+Tendelm stores habits, notes, check-ins, and time-since reset histories on this device. It has no account, analytics, ad SDK, or habit-data server. This personal build does not enable CloudKit synchronization or contact the original developer for feedback or purchases.
 
-## What Kadō stores
+Backups leave the app only when you choose a destination in the system share sheet. Imports read the file you select. Local notifications use the schedules you configure. Optional project links open GitHub in your browser. The pinned ThinkingOrbsKit dependency draws progress artwork locally.
 
-Your habits, completions, reminders, and settings are stored locally
-on your device using Apple's SwiftData framework.
-
-## iCloud sync (optional)
-
-If you enable iCloud sync, your data is replicated across your own
-Apple devices using Apple's CloudKit framework. It is stored in your
-private iCloud container — neither the app's developer nor any third
-party has access to it.
-
-## HealthKit (optional, future releases)
-
-If you grant HealthKit permission, Kadō reads activity data to
-auto-complete habits. HealthKit data stays on your device. Kadō never
-writes to HealthKit and never transmits HealthKit data anywhere.
-
-## Third-party services
-
-Kadō uses no third-party analytics, advertising, or crash reporting
-SDKs.
-
-## Contact
-
-Questions? Open an issue at https://github.com/scastiel/kado/issues or
-email sebastien@castiel.me.
-
-Last updated: 2026-04-19
+Uninstalling the app can delete its local data. Use Settings → Data → Export Data before uninstalling or changing signing identities. A device backup may be managed separately by iOS; Tendelm does not guarantee that a different signing identity can read it.

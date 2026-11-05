@@ -5,10 +5,11 @@ struct ElapsedTimeLabel: View {
     let start: Date
     var showsSeconds = false
     @Environment(\.scenePhase) private var scenePhase
+    @State private var visible = false
 
     var body: some View {
         // Timeline invalidates only this label, never queries or the history grid.
-        TimelineView(.animation(minimumInterval: showsSeconds ? 1 : 60, paused: scenePhase != .active)) { context in
+        TimelineView(.animation(minimumInterval: showsSeconds ? 1 : 60, paused: !visible || scenePhase != .active)) { context in
             let duration = ElapsedDuration(from: start, to: context.date)
             ViewThatFits(in: .horizontal) {
                 digits(duration, vertical: false)
@@ -18,6 +19,8 @@ struct ElapsedTimeLabel: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(accessibleDuration(duration))
         }
+        .onAppear { visible = true }
+        .onDisappear { visible = false }
     }
 
     private func digits(_ duration: ElapsedDuration, vertical: Bool) -> some View {

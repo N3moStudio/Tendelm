@@ -300,9 +300,12 @@ nonisolated enum UITestSupport {
         }
         archiveFirstHabitIfRequested(using: context)
         if ProcessInfo.processInfo.arguments.contains("-uiTestSeedTimeSince") {
-            let first = TimeSinceTracker(name: "Late-night scrolling", startedAt: .now.addingTimeInterval(-12 * 86400 - 9 * 3600),
-                color: .green, resets: [TimeSinceReset(date: .now.addingTimeInterval(-4 * 86400 - 3 * 3600 - 28 * 60))])
-            let second = TimeSinceTracker(name: "Nail biting", startedAt: .now.addingTimeInterval(-9 * 86400 - 6 * 3600 - 12 * 60), color: .blue)
+            let now = Date.now
+            let firstStart = now.addingTimeInterval(-1_069_200)
+            let recentReset = TimeSinceReset(date: now.addingTimeInterval(-358_080))
+            let first = TimeSinceTracker(name: "Late-night scrolling", startedAt: firstStart,
+                color: .green, resets: [recentReset])
+            let second = TimeSinceTracker(name: "Nail biting", startedAt: now.addingTimeInterval(-799_920), color: .blue)
             try? TimeSinceStore().save(first, in: context)
             try? TimeSinceStore().save(second, in: context)
         }
