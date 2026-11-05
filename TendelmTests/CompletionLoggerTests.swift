@@ -13,7 +13,7 @@ struct CompletionLoggerTests {
         container = try ModelContainer(
             for: HabitRecord.self, CompletionRecord.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
     }
 
     @Test("incrementCounter creates a completion with value 1 when none exists today")

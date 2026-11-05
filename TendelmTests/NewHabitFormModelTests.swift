@@ -159,7 +159,7 @@ struct NewHabitFormModelTests {
         let container = try ModelContainer(
             for: HabitRecord.self, CompletionRecord.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
         let record = HabitRecord(
             name: "Run",
             frequency: .everyNDays(3),
@@ -181,7 +181,7 @@ struct NewHabitFormModelTests {
         let container = try ModelContainer(
             for: HabitRecord.self, CompletionRecord.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
         let record = HabitRecord(
             frequency: .specificDays([.tuesday, .thursday]),
             type: .counter(target: 5)
@@ -200,7 +200,7 @@ struct NewHabitFormModelTests {
         let container = try ModelContainer(
             for: HabitRecord.self, CompletionRecord.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
         let original = HabitRecord(
             name: "Old",
             frequency: .daily,
@@ -232,7 +232,7 @@ struct NewHabitFormModelTests {
         let container = try ModelContainer(
             for: HabitRecord.self, CompletionRecord.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
         // 90 seconds rounds to 2 minutes (not 1 — truncation would).
         let record = HabitRecord(type: .timer(targetSeconds: 90))
         container.mainContext.insert(record)
@@ -246,7 +246,7 @@ struct NewHabitFormModelTests {
         let container = try ModelContainer(
             for: HabitRecord.self, CompletionRecord.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
         // 30 seconds rounds to 0.5 → 1 (minimum). Silent truncation would
         // give 0, which would fail validation.
         let record = HabitRecord(type: .timer(targetSeconds: 30))
@@ -278,7 +278,7 @@ struct NewHabitFormModelTests {
         let container = try ModelContainer(
             for: HabitRecord.self, CompletionRecord.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
         let model = NewHabitFormModel()
         model.name = "Fresh"
 
@@ -316,7 +316,7 @@ struct NewHabitFormModelTests {
         let container = try ModelContainer(
             for: HabitRecord.self, CompletionRecord.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
         let record = HabitRecord(name: "Read", color: .purple, icon: "book.fill")
         container.mainContext.insert(record)
 
@@ -368,7 +368,7 @@ struct NewHabitFormModelTests {
         let container = try ModelContainer(
             for: HabitRecord.self, CompletionRecord.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
         let record = HabitRecord(
             name: "Sleep",
             remindersEnabled: true,
@@ -389,7 +389,7 @@ struct NewHabitFormModelTests {
         let container = try ModelContainer(
             for: HabitRecord.self, CompletionRecord.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
         let original = HabitRecord(name: "Stretch")
         container.mainContext.insert(original)
         try container.mainContext.save()
@@ -409,7 +409,7 @@ struct NewHabitFormModelTests {
         let container = try ModelContainer(
             for: HabitRecord.self, CompletionRecord.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
         let original = HabitRecord(name: "Swim", color: .blue, icon: "circle")
         container.mainContext.insert(original)
         try container.mainContext.save()

@@ -12,7 +12,7 @@ struct PreviewContainerTests {
         let container = try ModelContainer(
             for: HabitRecord.self, CompletionRecord.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
         DevModeSeed.seed(into: container.mainContext)
 
         let habits = try container.mainContext.fetch(FetchDescriptor<HabitRecord>())

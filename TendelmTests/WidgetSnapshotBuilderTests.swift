@@ -16,7 +16,7 @@ struct WidgetSnapshotBuilderTests {
                 schema: schema,
                 isStoredInMemoryOnly: true
             )
-        )
+        ).usingExplicitTestSaves()
     }
 
     @Test("Empty container produces an empty snapshot")

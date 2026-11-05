@@ -19,7 +19,7 @@ struct TodayRowTests {
             for: schema,
             migrationPlan: TendelmMigrationPlan.self,
             configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
     }
 
     private let calendar = TestCalendar.utc

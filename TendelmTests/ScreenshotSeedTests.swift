@@ -34,7 +34,7 @@ struct ScreenshotSeedTests {
             for: schema,
             migrationPlan: TendelmMigrationPlan.self,
             configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
         let context = container.mainContext
         ScreenshotSeed.seed(into: context, calendar: calendar)
         let habits = try context.fetch(

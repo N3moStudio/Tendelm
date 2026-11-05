@@ -16,7 +16,7 @@ struct CompleteHabitIntentTests {
                 schema: schema,
                 isStoredInMemoryOnly: true
             )
-        )
+        ).usingExplicitTestSaves()
     }
 
     private func insert(

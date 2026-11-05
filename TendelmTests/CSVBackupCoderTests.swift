@@ -165,7 +165,7 @@ struct CSVBackupCoderTests {
     @Test("format_version higher than current throws unsupportedVersion")
     func unsupportedVersion() throws {
         let csv = String(decoding: coder.encode(document([habit()])), as: UTF8.self)
-        let bumped = csv.replacingOccurrences(of: "\n1,", with: "\n99,")
+        let bumped = csv.replacingOccurrences(of: "\n\(BackupDocument.currentFormatVersion),", with: "\n99,")
         #expect(throws: BackupError.unsupportedVersion(99)) {
             try coder.decode(Data(bumped.utf8))
         }
@@ -289,7 +289,7 @@ struct CSVBackupCoderTests {
 
         #expect(csv == """
         format_version,habit_id,habit_name,frequency,type,created_at,archived_at,color,icon,reminders_enabled,reminder_hour,reminder_minute,completion_id,completion_date,value,note
-        1,AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA,Meditate,specific_days:2|4|6,timer:600.0,2023-11-14T22:13:20Z,,blue,leaf,true,7,30,BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB,2023-11-15T22:13:20Z,1.0,felt good
+        2,AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA,Meditate,specific_days:2|4|6,timer:600.0,2023-11-14T22:13:20Z,,blue,leaf,true,7,30,BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB,2023-11-15T22:13:20Z,1.0,felt good
 
         """)
     }

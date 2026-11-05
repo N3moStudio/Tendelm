@@ -121,7 +121,9 @@ struct BackupDocumentCodingTests {
         """#
         let data = json.data(using: .utf8)!
         let decoded = try decoder().decode(BackupDocument.self, from: data)
-        #expect(decoded == sampleDocument())
+        var expectedLegacy = sampleDocument()
+        expectedLegacy.formatVersion = 1
+        #expect(decoded == expectedLegacy)
     }
 
     @Test("Archived habit round-trips with a non-nil archivedAt")

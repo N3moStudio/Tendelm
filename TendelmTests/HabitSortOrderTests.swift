@@ -13,7 +13,7 @@ struct HabitSortOrderTests {
             for: schema,
             migrationPlan: TendelmMigrationPlan.self,
             configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
     }
 
     @Test("nextSortOrder returns 0 when no habits exist")

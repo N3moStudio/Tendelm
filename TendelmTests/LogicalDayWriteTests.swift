@@ -21,7 +21,7 @@ struct LogicalDayWriteTests {
         container = try ModelContainer(
             for: HabitRecord.self, CompletionRecord.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
     }
 
     private var calendar: Calendar { TestCalendar.utc }

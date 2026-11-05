@@ -1,9 +1,8 @@
 import Foundation
 import SwiftData
 
-/// Version 5 of Tendelm's persistent schema. Adds a `sortOrder` field to
-/// `HabitRecord` so users can drag-to-reorder habits in the Today view.
-/// Migrated from V3 via a lightweight stage (new field has a default of 0).
+/// Version 5 adds independent time-since trackers and their reset history.
+/// Habit and completion fields remain identical to V4 for lightweight migration.
 public enum TendelmSchemaV5: VersionedSchema {
     public static let versionIdentifier = Schema.Version(5, 0, 0)
 

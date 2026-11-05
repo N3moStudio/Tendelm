@@ -9,7 +9,7 @@ struct TimeSincePersistenceTests {
     private func memoryStore() throws -> ModelContainer {
         let schema = Schema(versionedSchema: TendelmSchemaV5.self)
         return try ModelContainer(for: schema, migrationPlan: TendelmMigrationPlan.self,
-            configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none))
+            configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)).usingExplicitTestSaves()
     }
 
     @Test("Reset, undo and deletion persist without changing another tracker")
@@ -71,6 +71,35 @@ struct TimeSincePersistenceTests {
         #expect(try DefaultBackupImporter().parse(data: Data(json.utf8)).timeSinceTrackers.isEmpty)
     }
 
+    @Test("Restoring a tracker restores its history and keeps unrelated trackers")
+    func restoreHistory() throws {
+        let container = try memoryStore()
+        var first = TimeSinceTracker(name: "One", startedAt: start)
+        let second = TimeSinceTracker(name: "Two", startedAt: start)
+        let backup = BackupDocument(exportedAt: start, appVersion: "test", habits: [], timeSinceTrackers: [first])
+        try first.reset(at: start.addingTimeInterval(60))
+        try TimeSinceStore().save(first, in: container.mainContext)
+        try TimeSinceStore().save(second, in: container.mainContext)
+        try DefaultBackupImporter().apply(backup, to: container.mainContext)
+        let values = try container.mainContext.fetch(FetchDescriptor<TimeSinceRecord>()).map(\.snapshot)
+        #expect(values.count == 2)
+        #expect(values.first { $0.id == first.id }?.resets.isEmpty == true)
+        #expect(values.first { $0.id == second.id } == second)
+        #expect(try container.mainContext.fetchCount(FetchDescriptor<TimeSinceResetRecord>()) == 0)
+    }
+
+    @Test("An imported reset cannot reuse another tracker's identity")
+    func conflictingResetID() throws {
+        let container = try memoryStore()
+        let event = TimeSinceReset(date: start.addingTimeInterval(60))
+        let original = TimeSinceTracker(name: "Original", startedAt: start, resets: [event])
+        try TimeSinceStore().save(original, in: container.mainContext)
+        let conflict = TimeSinceTracker(name: "Other", startedAt: start, resets: [event])
+        #expect(throws: TimeSinceError.invalidTracker) { try TimeSinceStore().save(conflict, in: container.mainContext) }
+        #expect(try container.mainContext.fetchCount(FetchDescriptor<TimeSinceRecord>()) == 1)
+        #expect(try container.mainContext.fetchCount(FetchDescriptor<TimeSinceResetRecord>()) == 1)
+    }
+
     @Test("Invalid backup is rejected before touching existing data")
     func rejectInvalid() throws {
         let container = try memoryStore()
@@ -93,7 +122,7 @@ struct TimeSincePersistenceTests {
         let url = directory.appendingPathComponent("migration.store")
         do {
             let schema = Schema(versionedSchema: TendelmSchemaV4.self)
-            let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none))
+            let container = try ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none)).usingExplicitTestSaves()
             let habit = TendelmSchemaV4.HabitRecord(name: "Read")
             container.mainContext.insert(habit)
             container.mainContext.insert(TendelmSchemaV4.CompletionRecord(date: start, habit: habit))
@@ -103,14 +132,14 @@ struct TimeSincePersistenceTests {
         do {
             let schema = Schema(versionedSchema: TendelmSchemaV5.self)
             let container = try ModelContainer(for: schema, migrationPlan: TendelmMigrationPlan.self,
-                configurations: ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none))
+                configurations: ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none)).usingExplicitTestSaves()
             #expect(try container.mainContext.fetch(FetchDescriptor<HabitRecord>()).first?.name == "Read")
             #expect(try container.mainContext.fetchCount(FetchDescriptor<CompletionRecord>()) == 1)
             try TimeSinceStore().save(tracker, in: container.mainContext)
         }
         let schema = Schema(versionedSchema: TendelmSchemaV5.self)
         let reopened = try ModelContainer(for: schema, migrationPlan: TendelmMigrationPlan.self,
-            configurations: ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none))
+            configurations: ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none)).usingExplicitTestSaves()
         #expect(try reopened.mainContext.fetch(FetchDescriptor<TimeSinceRecord>()).first?.snapshot == tracker)
     }
 }

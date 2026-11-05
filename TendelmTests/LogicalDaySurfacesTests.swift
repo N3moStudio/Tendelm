@@ -20,7 +20,7 @@ struct LogicalDaySurfacesTests {
             for: schema,
             migrationPlan: TendelmMigrationPlan.self,
             configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
     }
 
     // MARK: - App Intents

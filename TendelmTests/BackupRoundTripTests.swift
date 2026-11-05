@@ -13,7 +13,7 @@ struct BackupRoundTripTests {
         try ModelContainer(
             for: HabitRecord.self, CompletionRecord.self, TimeSinceRecord.self, TimeSinceResetRecord.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
     }
 
     /// Builds a representative seed — one of each HabitType, plus an

@@ -22,7 +22,7 @@ struct DevModeControllerTests {
                     schema: schema,
                     isStoredInMemoryOnly: true
                 )
-            )
+            ).usingExplicitTestSaves()
         }
 
         let controller = DevModeController(

@@ -3,7 +3,8 @@ import TendelmCore
 
 /// Encoding and temporary-file IO happen away from the main actor.
 enum BackupFileWriter {
-    nonisolated static func write(_ document: BackupDocument, format: BackupFormat, filename: String) throws -> URL {
+    @concurrent
+    nonisolated static func write(_ document: BackupDocument, format: BackupFormat, filename: String) async throws -> URL {
         try Task.checkCancellation()
         let data: Data
         switch format {

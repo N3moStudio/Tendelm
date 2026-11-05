@@ -40,7 +40,7 @@ struct TendelmSchemaTests {
             for: schema,
             migrationPlan: TendelmMigrationPlan.self,
             configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
         let habit = HabitRecord(name: "Smoke")
         container.mainContext.insert(habit)
         try container.mainContext.save()
@@ -62,7 +62,7 @@ struct TendelmSchemaTests {
                 for: schema,
                 migrationPlan: nil,
                 configurations: config
-            )
+            ).usingExplicitTestSaves()
             let habit = TendelmSchemaV1.HabitRecord(name: "Pre-migration habit")
             container.mainContext.insert(habit)
             try container.mainContext.save()
@@ -75,7 +75,7 @@ struct TendelmSchemaTests {
             for: schema,
             migrationPlan: TendelmMigrationPlan.self,
             configurations: config
-        )
+        ).usingExplicitTestSaves()
         let habits = try container.mainContext.fetch(FetchDescriptor<TendelmSchemaV2.HabitRecord>())
         #expect(habits.count == 1)
         let habit = try #require(habits.first)
@@ -98,7 +98,7 @@ struct TendelmSchemaTests {
                 for: schema,
                 migrationPlan: nil,
                 configurations: config
-            )
+            ).usingExplicitTestSaves()
             let habit = TendelmSchemaV2.HabitRecord(name: "V2 habit", color: .orange)
             container.mainContext.insert(habit)
             try container.mainContext.save()
@@ -111,7 +111,7 @@ struct TendelmSchemaTests {
             for: schema,
             migrationPlan: TendelmMigrationPlan.self,
             configurations: config
-        )
+        ).usingExplicitTestSaves()
         let habits = try container.mainContext.fetch(FetchDescriptor<TendelmSchemaV3.HabitRecord>())
         #expect(habits.count == 1)
         let habit = try #require(habits.first)
@@ -136,7 +136,7 @@ struct TendelmSchemaTests {
                 for: schema,
                 migrationPlan: nil,
                 configurations: config
-            )
+            ).usingExplicitTestSaves()
             let habit = TendelmSchemaV3.HabitRecord(name: "V3 habit", color: .green)
             container.mainContext.insert(habit)
             try container.mainContext.save()
@@ -149,7 +149,7 @@ struct TendelmSchemaTests {
             for: schema,
             migrationPlan: TendelmMigrationPlan.self,
             configurations: config
-        )
+        ).usingExplicitTestSaves()
         let habits = try container.mainContext.fetch(FetchDescriptor<TendelmSchemaV4.HabitRecord>())
         #expect(habits.count == 1)
         let habit = try #require(habits.first)

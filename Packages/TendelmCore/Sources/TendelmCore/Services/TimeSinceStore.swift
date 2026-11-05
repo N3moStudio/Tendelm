@@ -17,6 +17,11 @@ public struct TimeSinceStore {
     /// Stages a validated snapshot so backup import can commit all data atomically.
     public func upsert(_ tracker: TimeSinceTracker, in context: ModelContext) throws {
         try tracker.validate()
+        let incomingIDs = Set(tracker.resets.map(\.id))
+        let savedResets = try context.fetch(FetchDescriptor<TimeSinceResetRecord>())
+        guard !savedResets.contains(where: { incomingIDs.contains($0.id) && $0.tracker?.id != tracker.id }) else {
+            throw TimeSinceError.invalidTracker
+        }
         let all = try context.fetch(FetchDescriptor<TimeSinceRecord>())
         let record: TimeSinceRecord
         if let existing = all.first(where: { $0.id == tracker.id }) {
@@ -28,7 +33,6 @@ public struct TimeSinceStore {
         record.name = tracker.name.trimmingCharacters(in: .whitespacesAndNewlines)
         record.startedAt = tracker.startedAt
         record.color = tracker.color
-        let incomingIDs = Set(tracker.resets.map(\.id))
         for event in record.resets ?? [] where !incomingIDs.contains(event.id) {
             context.delete(event)
         }

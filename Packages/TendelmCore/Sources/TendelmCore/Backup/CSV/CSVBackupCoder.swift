@@ -99,9 +99,11 @@ nonisolated public struct CSVBackupCoder: Sendable {
     // MARK: - Decoding
 
     public func decode(_ data: Data) throws -> BackupDocument {
-        guard let text = String(data: data, encoding: .utf8) else {
+        guard var text = String(data: data, encoding: .utf8) else {
             throw BackupError.invalidCSV
         }
+        // Excel's UTF-8 exports can prefix a BOM. It is not part of the header.
+        if text.first == "\u{FEFF}" { text.removeFirst() }
 
         let rows: [[String]]
         do {

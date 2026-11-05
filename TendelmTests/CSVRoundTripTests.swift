@@ -21,7 +21,7 @@ struct CSVRoundTripTests {
         try ModelContainer(
             for: HabitRecord.self, CompletionRecord.self, TimeSinceRecord.self, TimeSinceResetRecord.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
     }
 
     /// One habit of each `HabitType`, an archived habit, and a habit

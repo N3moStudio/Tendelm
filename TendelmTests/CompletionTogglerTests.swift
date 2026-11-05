@@ -13,7 +13,7 @@ struct CompletionTogglerTests {
         container = try ModelContainer(
             for: HabitRecord.self, CompletionRecord.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
     }
 
     @Test("Toggling a habit with no completion today inserts one with value 1")

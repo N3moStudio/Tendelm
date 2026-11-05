@@ -22,7 +22,7 @@ struct HabitLifecycleTests {
                 schema: schema,
                 isStoredInMemoryOnly: true
             )
-        )
+        ).usingExplicitTestSaves()
     }
 
     /// A habit with `count` completions, inserted and saved.

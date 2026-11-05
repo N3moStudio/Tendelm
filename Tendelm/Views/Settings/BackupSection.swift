@@ -109,21 +109,19 @@ struct BackupSection: View {
         guard !isExporting else { return }
         isExporting = true
         exportTask = Task {
-        defer { isExporting = false }
-        do {
-            let document = try exporter.export(from: modelContext)
-            let filename = "tendelm-backup-\(Self.filenameDate(from: .now)).\(format.fileExtension)"
-            let url = try await Task.detached(priority: .userInitiated) {
-                try BackupFileWriter.write(document, format: format, filename: filename)
-            }.value
-            try Task.checkCancellation()
-            lastExportAt = Date.now.timeIntervalSince1970
-            presentedSheet = .share(url)
-        } catch is CancellationError {
-            return
-        } catch {
-            presentedAlert = .exportFailed(error.localizedDescription)
-        }
+            defer { isExporting = false }
+            do {
+                let document = try exporter.export(from: modelContext)
+                let filename = "tendelm-backup-\(Self.filenameDate(from: .now)).\(format.fileExtension)"
+                let url = try await BackupFileWriter.write(document, format: format, filename: filename)
+                try Task.checkCancellation()
+                lastExportAt = Date.now.timeIntervalSince1970
+                presentedSheet = .share(url)
+            } catch is CancellationError {
+                return
+            } catch {
+                presentedAlert = .exportFailed(error.localizedDescription)
+            }
         }
     }
 

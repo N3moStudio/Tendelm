@@ -13,7 +13,7 @@ struct HabitRecordTests {
         container = try ModelContainer(
             for: HabitRecord.self, CompletionRecord.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
     }
 
     @Test("Snapshot projects all fields back to a value-type Habit")

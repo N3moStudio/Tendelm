@@ -16,7 +16,7 @@ struct LogHabitValueIntentTests {
                 schema: schema,
                 isStoredInMemoryOnly: true
             )
-        )
+        ).usingExplicitTestSaves()
     }
 
     private func insert(_ habit: HabitRecord, into container: ModelContainer) throws {

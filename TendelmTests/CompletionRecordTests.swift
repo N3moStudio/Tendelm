@@ -13,7 +13,7 @@ struct CompletionRecordTests {
         container = try ModelContainer(
             for: HabitRecord.self, CompletionRecord.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
     }
 
     @Test("Snapshot projects fields and uses the parent's id as habitID")

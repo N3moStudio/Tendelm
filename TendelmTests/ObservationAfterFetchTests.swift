@@ -35,7 +35,7 @@ struct ObservationAfterFetchTests {
         let container = try ModelContainer(
             for: HabitRecord.self, CompletionRecord.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
         let habit = HabitRecord(name: "Water", frequency: .daily, type: .counter(target: 8))
         container.mainContext.insert(habit)
         container.mainContext.insert(CompletionRecord(date: TestCalendar.day(0), value: 1, habit: habit))

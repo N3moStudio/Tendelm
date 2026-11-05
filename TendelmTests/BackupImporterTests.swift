@@ -13,7 +13,7 @@ struct BackupImporterTests {
         container = try ModelContainer(
             for: HabitRecord.self, CompletionRecord.self, TimeSinceRecord.self, TimeSinceResetRecord.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        ).usingExplicitTestSaves()
     }
 
     private func importer() -> DefaultBackupImporter { DefaultBackupImporter() }
