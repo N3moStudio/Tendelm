@@ -48,7 +48,8 @@ struct TimeSinceUndoTests {
         var tracker = TimeSinceTracker(name: "Coffee", startedAt: start)
         for seconds in [10.0, 20.0, 30.0] { try tracker.reset(at: start.addingTimeInterval(seconds)) }
         let events = tracker.orderedResets
-        let removed = try #require(tracker.deleteReset(id: events[index].id))
+        let deleted = tracker.deleteReset(id: events[index].id)
+        let removed = try #require(deleted)
         #expect(tracker.startedAt == start)
         #expect(tracker.resets.count == 2)
         #expect(!tracker.resets.contains(removed))
@@ -66,7 +67,8 @@ struct TimeSinceUndoTests {
     func safeguards() throws {
         var tracker = TimeSinceTracker(name: "Coffee", startedAt: start)
         let added = try tracker.reset(at: start.addingTimeInterval(10))
-        let removed = try #require(tracker.deleteReset(id: added.reset.id))
+        let deleted = tracker.deleteReset(id: added.reset.id)
+        let removed = try #require(deleted)
         let action = TimeSinceUndoAction(trackerID: tracker.id, change: .deleted(removed))
         var other = TimeSinceTracker(name: "Scrolling", startedAt: start)
         let otherBefore = other

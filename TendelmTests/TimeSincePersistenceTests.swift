@@ -21,7 +21,8 @@ struct TimeSincePersistenceTests {
         try tracker.reset(at: start.addingTimeInterval(20))
         try store.save(tracker, in: container.mainContext)
         let original = tracker.orderedResets
-        let event = try #require(tracker.deleteReset(id: original[0].id))
+        let deleted = tracker.deleteReset(id: original[0].id)
+        let event = try #require(deleted)
         try store.save(tracker, in: container.mainContext)
         let afterDelete = try #require(ModelContext(container).fetch(FetchDescriptor<TimeSinceRecord>()).first?.snapshot)
         #expect(afterDelete.orderedResets == [original[1]])
