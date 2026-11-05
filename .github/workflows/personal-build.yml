@@ -60,11 +60,11 @@ jobs:
           mkdir -p output/Payload
           cp -R device-build/Build/Products/Release-iphoneos/Tendelm.app output/Payload/
           cd output
-          zip -qr Tendelm-1.0.1.ipa Payload
-          shasum -a 256 Tendelm-1.0.1.ipa > Tendelm-1.0.1.ipa.sha256
+          zip -qr Tendelm-1.0.2.ipa Payload
+          shasum -a 256 Tendelm-1.0.2.ipa > Tendelm-1.0.2.ipa.sha256
           rm -rf Payload
       - name: Inspect device package
-        run: python3 Scripts/verify-personal-ipa.py output/Tendelm-1.0.1.ipa > output/package-inspection.json
+        run: python3 Scripts/verify-personal-ipa.py output/Tendelm-1.0.2.ipa > output/package-inspection.json
       - name: Verify reset regression test
         run: bash Scripts/check-reset-guard.sh
       - name: Export evidence

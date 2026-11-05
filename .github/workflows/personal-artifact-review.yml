@@ -24,9 +24,9 @@ jobs:
       - name: Inspect the existing IPA
         run: |
           mkdir -p output
-          python3 Scripts/verify-personal-ipa.py prior-build/Tendelm-1.0.1.ipa > output/package-inspection.json
+          python3 Scripts/verify-personal-ipa.py prior-build/Tendelm-1.0.2.ipa > output/package-inspection.json
           cd prior-build
-          shasum -a 256 -c Tendelm-1.0.1.ipa.sha256
+          shasum -a 256 -c Tendelm-1.0.2.ipa.sha256
       - name: Select Xcode and simulator
         run: |
           DEVELOPER_APP=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
