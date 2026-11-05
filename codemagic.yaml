@@ -16,6 +16,5 @@ workflows:
       - .build-personal-*/*.ipa
       - .build-personal-*/*.log
       - .build-personal-*/*.json
-      - .build-personal-*/attachments/**/*.png
-      - .build-personal-*/attachments/**/*.jpeg
-      - .build-personal-*/attachments/**/*.json
+      - .build-personal-*/*.xcresult.zip
+      - .build-personal-*/attachments/**/*

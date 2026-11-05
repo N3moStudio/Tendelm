@@ -72,7 +72,10 @@ final class PersonalEditionTests: TendelmUITestCase {
         let fifteenth = app.buttons.matching(NSPredicate(format: "label CONTAINS '15'")).firstMatch
         XCTAssertTrue(fifteenth.exists, app.debugDescription)
         fifteenth.tap()
-        field.tap() // dismiss the compact calendar
+        let dismissRegion = app.otherElements["PopoverDismissRegion"].firstMatch
+        XCTAssertTrue(dismissRegion.waitForExistence(timeout: 5), app.debugDescription)
+        dismissRegion.tap()
+        XCTAssertTrue(next.waitForNonExistence(timeout: 5))
         photograph(app, "06-future-start-editor")
         app.buttons["timeSince.save"].tap()
         XCTAssertTrue(app.staticTexts["Starting next month"].waitForExistence(timeout: 5))

@@ -10,6 +10,7 @@ fi
 command -v xcodebuild >/dev/null
 command -v python3 >/dev/null
 out=$(mktemp -d "$root/.build-personal-XXXXXXXX")
+baseline=${TENDELM_RESUME_UI_BASELINE:-}
 echo "Build logs and test results: $out"
 
 assert_idle() {
@@ -42,12 +43,17 @@ finish() {
       collection_status=partial
       echo "Could not export all $name attachments; see collection.log." >&2
     fi
+    if ! (cd "$out" && zip -qr "$name.xcresult.zip" "$name.xcresult"); then
+      collection_status=partial
+      echo "Could not archive the $name result bundle." >&2
+    fi
   done
-  python3 - "$out" "$native_status" "$collection_status" <<'PY'
+  python3 - "$out" "$native_status" "$collection_status" "$baseline" <<'PY'
 import json, pathlib, subprocess, sys
-out, status, collection = sys.argv[1:]
+out, status, collection, baseline = sys.argv[1:]
 receipt = {"commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
-           "native_exit_code": int(status), "evidence_collection": collection}
+           "native_exit_code": int(status), "evidence_collection": collection,
+           "reused_test_baseline": baseline or None}
 pathlib.Path(out, "build-receipt.json").write_text(json.dumps(receipt, indent=2))
 PY
   exit "$native_status"
@@ -75,16 +81,30 @@ run_xcode() {
   fi
 }
 
-run_xcode unit-tests test -project Tendelm.xcodeproj -scheme Tendelm \
-  -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath "$out/DerivedData" \
-  -resultBundlePath "$out/UnitTests.xcresult" -only-testing:TendelmTests CODE_SIGNING_ALLOWED=NO
+ui_tests=(-only-testing:TendelmUITests/PersonalEditionTests -only-testing:TendelmUITests/HabitThemePickerTests)
+if [[ -n "$baseline" ]]; then
+  # A manual resume is only for an already-verified unit suite and unchanged
+  # production code. Normal builds always run the complete selection below.
+  [[ "$baseline" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid verified baseline." >&2; exit 1; }
+  git cat-file -e "$baseline^{commit}" 2>/dev/null || git fetch --no-tags --depth=1 origin "$baseline"
+  git diff --exit-code "$baseline" HEAD -- . \
+    ':(exclude)TendelmUITests/PersonalEditionTests.swift' \
+    ':(exclude)Scripts/build-personal.sh' ':(exclude)codemagic.yaml'
+  echo "Reusing passed unit/interaction results from unchanged production source at $baseline."
+  run_xcode simulator-build build-for-testing -project Tendelm.xcodeproj -scheme Tendelm \
+    -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath "$out/DerivedData" CODE_SIGNING_ALLOWED=NO
+  ui_tests=(-only-testing:TendelmUITests/PersonalEditionTests/testChooseFutureDateThenEditAndRelaunch)
+else
+  run_xcode unit-tests test -project Tendelm.xcodeproj -scheme Tendelm \
+    -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath "$out/DerivedData" \
+    -resultBundlePath "$out/UnitTests.xcresult" -only-testing:TendelmTests CODE_SIGNING_ALLOWED=NO
+fi
 xcrun simctl boot "$device_id" 2>/dev/null || true
 xcrun simctl bootstatus "$device_id" -b
 xcrun simctl ui "$device_id" appearance light
 run_xcode iphone-ui test-without-building -project Tendelm.xcodeproj -scheme Tendelm \
   -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath "$out/DerivedData" \
-  -resultBundlePath "$out/iPhone.xcresult" -only-testing:TendelmUITests/PersonalEditionTests \
-  -only-testing:TendelmUITests/HabitThemePickerTests -parallel-testing-enabled NO \
+  -resultBundlePath "$out/iPhone.xcresult" "${ui_tests[@]}" -parallel-testing-enabled NO \
   -test-timeouts-enabled YES -default-test-execution-time-allowance 90 \
   -maximum-test-execution-time-allowance 180 CODE_SIGNING_ALLOWED=NO
 xcrun simctl ui "$device_id" appearance dark
