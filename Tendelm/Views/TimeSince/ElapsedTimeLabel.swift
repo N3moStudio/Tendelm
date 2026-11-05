@@ -9,18 +9,30 @@ struct ElapsedTimeLabel: View {
 
     var body: some View {
         // Timeline invalidates only this label, never queries or the history grid.
-        TimelineView(.animation(minimumInterval: showsSeconds ? 1 : 60, paused: !visible || scenePhase != .active)) { context in
-            let duration = ElapsedDuration(from: start, to: context.date)
-            ViewThatFits(in: .horizontal) {
-                digits(duration, vertical: false)
-                digits(duration, vertical: true)
+        Group {
+            if visible && scenePhase == .active {
+                // Anchor updates to the saved start, so minutes change at their
+                // actual boundary even when this screen opens mid-minute.
+                TimelineView(.periodic(from: start, by: showsSeconds ? 1 : 60)) { context in
+                    durationLabel(at: context.date)
+                }
+            } else {
+                durationLabel(at: .now)
             }
-            .monospacedDigit()
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(accessibleDuration(duration))
         }
         .onAppear { visible = true }
         .onDisappear { visible = false }
+    }
+
+    private func durationLabel(at now: Date) -> some View {
+        let duration = ElapsedDuration(from: start, to: now)
+        return ViewThatFits(in: .horizontal) {
+            digits(duration, vertical: false)
+            digits(duration, vertical: true)
+        }
+        .monospacedDigit()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibleDuration(duration))
     }
 
     private func digits(_ duration: ElapsedDuration, vertical: Bool) -> some View {

@@ -9,7 +9,8 @@ struct TimeSinceTests {
 
     @Test("Elapsed duration is exact through days, hours, minutes and seconds")
     func components() {
-        let value = ElapsedDuration(from: start, to: start.addingTimeInterval(2 * 86400 + 3 * 3600 + 4 * 60 + 5))
+        // 2 days + 3 hours + 4 minutes + 5 seconds.
+        let value = ElapsedDuration(from: start, to: start.addingTimeInterval(183_845))
         #expect(value.days == 2)
         #expect(value.hours == 3)
         #expect(value.minutes == 4)

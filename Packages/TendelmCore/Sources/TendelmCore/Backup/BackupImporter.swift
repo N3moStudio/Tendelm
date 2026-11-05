@@ -81,67 +81,67 @@ public struct DefaultBackupImporter: BackupImporting {
     public func apply(_ document: BackupDocument, to context: ModelContext) throws -> ImportSummary {
         let trackerSummary = try summary(for: document, in: context)
         do {
-        var existing = try existingHabits(in: context)
-        var summary = ImportSummary()
+            var existing = try existingHabits(in: context)
+            var summary = ImportSummary()
 
-        for habitBackup in document.habits {
-            summary.totalHabits += 1
-            summary.totalCompletions += habitBackup.completions.count
+            for habitBackup in document.habits {
+                summary.totalHabits += 1
+                summary.totalCompletions += habitBackup.completions.count
 
-            let record: HabitRecord
-            if let existingRecord = existing[habitBackup.id] {
-                Self.overwrite(existingRecord, with: habitBackup)
-                record = existingRecord
-                summary.updatedHabits += 1
-            } else {
-                let newRecord = HabitRecord(
-                    id: habitBackup.id,
-                    name: habitBackup.name,
-                    frequency: habitBackup.frequency,
-                    type: habitBackup.type,
-                    createdAt: habitBackup.createdAt,
-                    archivedAt: habitBackup.archivedAt,
-                    color: habitBackup.color,
-                    icon: habitBackup.icon,
-                    remindersEnabled: habitBackup.remindersEnabled,
-                    reminderHour: habitBackup.reminderHour,
-                    reminderMinute: habitBackup.reminderMinute
-                )
-                context.insert(newRecord)
-                existing[habitBackup.id] = newRecord
-                record = newRecord
-                summary.newHabits += 1
-            }
-
-            let existingCompletions = Self.completionsByID(record)
-            for completionBackup in habitBackup.completions {
-                if let existingCompletion = existingCompletions[completionBackup.id] {
-                    existingCompletion.date = completionBackup.date
-                    existingCompletion.value = completionBackup.value
-                    existingCompletion.note = completionBackup.note
-                    summary.updatedCompletions += 1
+                let record: HabitRecord
+                if let existingRecord = existing[habitBackup.id] {
+                    Self.overwrite(existingRecord, with: habitBackup)
+                    record = existingRecord
+                    summary.updatedHabits += 1
                 } else {
-                    let completion = CompletionRecord(
-                        id: completionBackup.id,
-                        date: completionBackup.date,
-                        value: completionBackup.value,
-                        note: completionBackup.note,
-                        habit: record
+                    let newRecord = HabitRecord(
+                        id: habitBackup.id,
+                        name: habitBackup.name,
+                        frequency: habitBackup.frequency,
+                        type: habitBackup.type,
+                        createdAt: habitBackup.createdAt,
+                        archivedAt: habitBackup.archivedAt,
+                        color: habitBackup.color,
+                        icon: habitBackup.icon,
+                        remindersEnabled: habitBackup.remindersEnabled,
+                        reminderHour: habitBackup.reminderHour,
+                        reminderMinute: habitBackup.reminderMinute
                     )
-                    context.insert(completion)
-                    summary.newCompletions += 1
+                    context.insert(newRecord)
+                    existing[habitBackup.id] = newRecord
+                    record = newRecord
+                    summary.newHabits += 1
+                }
+
+                let existingCompletions = Self.completionsByID(record)
+                for completionBackup in habitBackup.completions {
+                    if let existingCompletion = existingCompletions[completionBackup.id] {
+                        existingCompletion.date = completionBackup.date
+                        existingCompletion.value = completionBackup.value
+                        existingCompletion.note = completionBackup.note
+                        summary.updatedCompletions += 1
+                    } else {
+                        let completion = CompletionRecord(
+                            id: completionBackup.id,
+                            date: completionBackup.date,
+                            value: completionBackup.value,
+                            note: completionBackup.note,
+                            habit: record
+                        )
+                        context.insert(completion)
+                        summary.newCompletions += 1
+                    }
                 }
             }
-        }
 
-        for tracker in document.timeSinceTrackers {
-            try TimeSinceStore().upsert(tracker, in: context)
-        }
-        summary.totalTrackers = trackerSummary.totalTrackers
-        summary.newTrackers = trackerSummary.newTrackers
-        summary.updatedTrackers = trackerSummary.updatedTrackers
-        try context.save()
-        return summary
+            for tracker in document.timeSinceTrackers {
+                try TimeSinceStore().upsert(tracker, in: context)
+            }
+            summary.totalTrackers = trackerSummary.totalTrackers
+            summary.newTrackers = trackerSummary.newTrackers
+            summary.updatedTrackers = trackerSummary.updatedTrackers
+            try context.save()
+            return summary
         } catch { context.rollback(); throw error }
     }
 
