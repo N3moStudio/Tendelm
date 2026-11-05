@@ -7,13 +7,14 @@ A calm personal habit and time-since tracker for iPhone and iPad. Built from [Ka
 ## Everyday use
 
 - **Today:** keep the familiar list, or choose **View → Cards** for a compact contribution calendar on each habit. Existing quick-log controls remain.
-- **Time since:** tap **+**, name a tracker, and start. Each tracker counts independently. **Log a reset** records an occurrence; **Undo** restores the previous run. Open a tracker for seconds, quiet history, editing, and deletion.
+- **Time since:** tap **+**, name a tracker, and start. Open **Start date & color** to choose a past or future date/time. Future trackers count down, then start automatically. Each tracker counts independently. **Log a reset** records an occurrence; **Undo** restores the previous run. Open a tracker for seconds, quiet history, editing, and deletion.
+- **Settings → Appearance:** choose System, Light or Dark for the display, and a palette for habit/tracker colors. The small dots preview each palette; individual colors are chosen while editing a habit or tracker.
 - **Settings → Data:** export or restore JSON and CSV, including all time-since trackers. Original Kadō version-1 backups remain readable. Version-2 exports require Tendelm or another importer supporting that format.
 - No account, onboarding, analytics, or subscription. Original source palettes are available locally. Thinking Orbs appears only while a real backup is being prepared, with reduced-motion and low-power support.
 
 ## Personal build
 
-Version 1.0.0 (1) is built. See [validation and artifact evidence](docs/TENDELM-VALIDATION.md) and [actual simulator screenshots](docs/screenshots/tendelm). The delivered IPA is `C:\Users\naith\Downloads\Tendelm-1.0.0.ipa` and requires personal signing.
+Version 1.0.1 (2) is built. See [validation and artifact evidence](docs/TENDELM-1.0.1-VALIDATION.md) and [actual simulator screenshots](docs/screenshots/tendelm-1.0.1). The delivered IPA is `C:\Users\naith\Downloads\Tendelm-1.0.1.ipa` and requires personal signing. [Build 1 evidence](docs/TENDELM-VALIDATION.md) remains available.
 
 - Local repository: `C:\Users\naith\Documents\GitHub\Tendelm`
 - Project: `Tendelm.xcodeproj`, scheme `Tendelm`; core module `Packages/TendelmCore`.

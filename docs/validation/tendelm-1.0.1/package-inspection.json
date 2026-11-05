@@ -1,0 +1,24 @@
+{
+  "file": "/Users/runner/work/Tendelm/Tendelm/output/Tendelm-1.0.1.ipa",
+  "bytes": 10251577,
+  "sha256": "53984e3f62afa4375fdfe4d272262c593e84ec91fb693e91b32e5815094bc186",
+  "version": "1.0.1",
+  "build": "2",
+  "minimum_os": "18.0",
+  "binaries": [
+    {
+      "bundle_id": "com.n3mostudio.tendelm",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "encrypted": false
+    },
+    {
+      "bundle_id": "com.n3mostudio.tendelm.TendelmWidgets",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "encrypted": false
+    }
+  ],
+  "provisioning": "No profile; personal signing required",
+  "zip_integrity": "passed"
+}

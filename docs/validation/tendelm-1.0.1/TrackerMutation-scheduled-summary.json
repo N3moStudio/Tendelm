@@ -1,0 +1,49 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D",
+        "deviceName" : "iPhone 16 Pro",
+        "modelName" : "iPhone 16 Pro",
+        "osBuildNumber" : "22F77",
+        "osVersion" : "18.5",
+        "platform" : "iOS Simulator"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 1,
+      "passedTests" : 7,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "Tendelm · Built with macOS 15.8.2",
+  "expectedFailures" : 0,
+  "failedTests" : 1,
+  "finishTime" : 1793853490.281,
+  "passedTests" : 7,
+  "result" : "Failed",
+  "skippedTests" : 0,
+  "startTime" : 1793853358.263,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "Expectation failed: (before → TimeSinceStatus(isScheduled: false, duration: TendelmCore.ElapsedDuration(totalSeconds: 0))).isScheduled → false",
+      "targetName" : "TendelmTests",
+      "testIdentifier" : 2,
+      "testIdentifierString" : "TimeSinceTests/scheduledBoundary()",
+      "testIdentifierURL" : "test://com.apple.xcode/Tendelm/TendelmTests/TimeSinceTests/scheduledBoundary()",
+      "testName" : "A scheduled tracker counts down and becomes elapsed at the exact start"
+    }
+  ],
+  "title" : "Test - Tendelm",
+  "topInsights" : [
+
+  ],
+  "totalTestCount" : 8
+}
