@@ -50,7 +50,12 @@ final class PersonalEditionTests: TendelmUITestCase {
         waitForTodayRows(in: app)
         chooseCards(in: app)
         XCTAssertTrue(todayRows(in: app).firstMatch.exists)
-        todayRows(in: app).firstMatch.tap()
+        // A combined row also exposes its quick-log control. Test the actual
+        // name and grid touch regions instead of XCTest's chosen activation point.
+        app.staticTexts["Morning meditation"].firstMatch.tap()
+        XCTAssertTrue(app.buttons[AccessibilityID.HabitDetail.scoreCard].firstMatch.waitForExistence(timeout: 10))
+        leaveHabitDetail(in: app)
+        todayRows(in: app).firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.45, dy: 0.75)).tap()
         XCTAssertTrue(app.buttons[AccessibilityID.HabitDetail.scoreCard].firstMatch.waitForExistence(timeout: 10))
         leaveHabitDetail(in: app)
         app.buttons[AccessibilityID.Today.newHabitButton].firstMatch.tap()
@@ -119,6 +124,8 @@ final class PersonalEditionTests: TendelmUITestCase {
 
     @MainActor
     private func photograph(_ app: XCUIApplication, _ name: String) {
+        // Navigation/menu transitions can outlive XCTest's idle signal.
+        RunLoop.current.run(until: Date().addingTimeInterval(0.6))
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = name
         attachment.lifetime = .keepAlways
