@@ -112,7 +112,7 @@ struct TendelmApp: App {
             return MockSupporterPackStore(isSupporter: true)
         }
         #endif
-        return DefaultSupporterPackStore()
+        return PersonalAppearanceStore()
     }
 
     init() {

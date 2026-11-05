@@ -71,10 +71,14 @@ class TendelmUITestCase: XCTestCase {
         habitTheme: String? = nil,
         appearanceAnnouncement: Bool = false,
         tipNudgeReady: Bool = false,
-        iCloudAvailable: Bool = false
+        iCloudAvailable: Bool = false,
+        seedTimeSince: Bool = false,
+        contentSize: String? = nil
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestRun"]
+        if seedTimeSince { app.launchArguments.append("-uiTestSeedTimeSince") }
+        if let contentSize { app.launchArguments += ["-UIPreferredContentSizeCategoryName", contentSize] }
 
         if resetState {
             app.launchArguments.append("-uiTestResetState")

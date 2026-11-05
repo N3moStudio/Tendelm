@@ -299,6 +299,13 @@ nonisolated enum UITestSupport {
             DevModeSeed.seed(into: context)
         }
         archiveFirstHabitIfRequested(using: context)
+        if ProcessInfo.processInfo.arguments.contains("-uiTestSeedTimeSince") {
+            let first = TimeSinceTracker(name: "Late-night scrolling", startedAt: .now.addingTimeInterval(-12 * 86400 - 9 * 3600),
+                color: .green, resets: [TimeSinceReset(date: .now.addingTimeInterval(-4 * 86400 - 3 * 3600 - 28 * 60))])
+            let second = TimeSinceTracker(name: "Nail biting", startedAt: .now.addingTimeInterval(-9 * 86400 - 6 * 3600 - 12 * 60), color: .blue)
+            try? TimeSinceStore().save(first, in: context)
+            try? TimeSinceStore().save(second, in: context)
+        }
         // The launch-time snapshot write in `TendelmApp` races this seed and
         // usually wins, leaving the widgets — and the habit picker in
         // their edit sheet, which reads the same snapshot — looking at
@@ -338,6 +345,7 @@ nonisolated enum UITestSupport {
     }
 
     private static func resetState() {
+        UserDefaults.standard.removeObject(forKey: "personal.todayLayout")
         for url in [productionStoreURL(), devStoreURL()] {
             // SwiftData writes `<name>.sqlite` plus `-shm` / `-wal` siblings.
             for suffix in ["", "-shm", "-wal"] {

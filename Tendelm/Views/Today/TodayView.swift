@@ -620,7 +620,7 @@ struct TodayView: View {
     private func refreshCard() {
         card = TodayCard.resolve(
             announcementRetiredAt: appearanceAnnouncement.retiredAt(),
-            tipNudgeDue: tipNudge.shouldShow(),
+            tipNudgeDue: false,
             now: .now,
             calendar: calendar
         )

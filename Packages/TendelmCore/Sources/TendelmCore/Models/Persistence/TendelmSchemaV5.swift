@@ -148,7 +148,7 @@ public typealias CompletionRecord = TendelmSchemaV5.CompletionRecord
 
 public extension TendelmSchemaV5 {
     @Model
-    final class TimeSinceRecord {
+    public final class TimeSinceRecord {
         public var id: UUID = UUID()
         public var name: String = ""
         public var startedAt: Date = Date()
@@ -171,7 +171,7 @@ public extension TendelmSchemaV5 {
         }
     }
     @Model
-    final class TimeSinceResetRecord {
+    public final class TimeSinceResetRecord {
         public var id: UUID = UUID()
         public var date: Date = Date()
         public var tracker: TimeSinceRecord?
