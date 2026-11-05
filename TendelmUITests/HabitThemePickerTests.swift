@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 
 /// The Habit colours picker (#111) reaches the app-wide theme.
 ///
@@ -30,6 +31,7 @@ final class HabitThemePickerTests: TendelmUITestCase {
     func testChoosingClassicRecoloursTheAppWithoutARelaunch() {
         let app = launchApp(seedProduction: true, seedForScreenshots: true)
         waitForTodayRows(in: app)
+        let before = badgePixels(in: app)
         capture(app, "habit-theme-today-kado")
 
         openAppearance(in: app)
@@ -53,6 +55,18 @@ final class HabitThemePickerTests: TendelmUITestCase {
         tapTab(.today, in: app)
         waitForTodayRows(in: app)
         capture(app, "habit-theme-today-classic")
+        XCTAssertNotEqual(before, badgePixels(in: app), "The habit's painted badge must change, not only the Settings checkmark.")
+    }
+
+    @MainActor
+    private func badgePixels(in app: XCUIApplication) -> Data? {
+        RunLoop.current.run(until: Date().addingTimeInterval(0.6))
+        let image = todayRows(in: app).firstMatch.screenshot().image
+        guard let cg = image.cgImage else { return nil }
+        // Only the leading badge: excludes text, counts, clocks and controls.
+        let crop = CGRect(x: 0, y: 4 * image.scale, width: 38 * image.scale, height: 38 * image.scale)
+        guard let badge = cg.cropping(to: crop) else { return nil }
+        return UIImage(cgImage: badge).pngData()
     }
 
     /// A paid theme without the pack (#113) opens the pack instead of
@@ -60,21 +74,18 @@ final class HabitThemePickerTests: TendelmUITestCase {
     /// the destination sits on `AppearanceView`'s `Form`, and a
     /// `navigationDestination` in the wrong place is silently ignored.
     @MainActor
-    func testTappingALockedThemeOpensTheSupporterPack() {
+    func testEveryPaletteIsSelectableInPersonalEdition() {
         let app = launchApp()
         openAppearance(in: app)
-        let vivid = themeRow("vivid", in: app)
-        scrollTo(vivid, in: app)
-        scrollClearOfTabBar(vivid, in: app)
-        capture(app, "habit-theme-picker-locked")
-
-        vivid.tap()
-        let restore = app.buttons[AccessibilityID.SupporterPack.restoreButton]
-        XCTAssertTrue(
-            restore.waitForExistence(timeout: 10),
-            "A locked theme should open the Supporter pack."
-        )
-        capture(app, "habit-theme-locked-opens-pack")
+        for theme in ["classic", "muted", "vivid", "autumn", "monochromeSage", "kado"] {
+            let row = themeRow(theme, in: app)
+            scrollTo(row, in: app)
+            scrollClearOfTabBar(row, in: app)
+            row.tap()
+            let selected = expectation(for: NSPredicate(format: "isSelected == true"), evaluatedWith: row)
+            wait(for: [selected], timeout: 5)
+        }
+        capture(app, "habit-theme-all-palettes-available")
     }
 }
 
