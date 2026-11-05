@@ -32,13 +32,10 @@ public struct LockDayProgressView: View {
         .accessibilityLabel(accessibilityLabel)
     }
 
-    /// The ensō from `branding/kado-mark.svg`, as a template image:
-    /// the lock screen keeps only its alpha and paints it in the
-    /// widget's tint, which is exactly what a one-colour brush stroke
-    /// wants. The asset lives in this package's own catalog so the
-    /// extension and the app draw the same file.
+    /// A native leaf keeps Tendelm's botanical identity legible in
+    /// the Lock Screen's small, monochrome widget surface.
     private var mark: some View {
-        Image("TendelmMark", bundle: .module)
+        Image(systemName: "leaf.fill")
             .resizable()
             .renderingMode(.template)
             .aspectRatio(contentMode: .fit)

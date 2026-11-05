@@ -2,7 +2,8 @@ import SwiftUI
 import TendelmCore
 
 /// A glanceable history, not 182 tiny tap targets. The card opens the existing
-/// accessible calendar editor; VoiceOver gets a concise summary here.
+/// accessible calendar editor. The header already describes the habit, so
+/// the decorative grid must not override its navigation label or action.
 struct HabitHistoryCardGrid: View {
     let habit: Habit
     let completions: [Completion]
@@ -60,8 +61,8 @@ struct HabitHistoryCardGrid: View {
         .frame(height: min(14, max(4, (availableWidth - 22 - CGFloat(weeks - 1) * 2) / CGFloat(weeks))) * 7 + 33)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { availableWidth = $0 }
         .dynamicTypeSize(.medium)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Recent habit history. Open this habit for its calendar and daily values.")
+        .accessibilityHidden(true)
+        .allowsHitTesting(false)
     }
 
     private func weekday(_ index: Int) -> String {

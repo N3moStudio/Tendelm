@@ -31,10 +31,17 @@ final class PersonalEditionTests: TendelmUITestCase {
         let field = nameField(in: app)
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         field.tap()
-        // Append rather than relying on a localized Select All menu.
+        // Tapping an existing field can place its cursor at either end.
+        // Check the actual edited value rather than assuming a cursor position.
         field.typeText(" less")
+        let editedName = try XCTUnwrap(field.value as? String).trimmingCharacters(in: .whitespacesAndNewlines)
+        XCTAssertNotEqual(editedName, "Late-night scrolling")
         app.buttons["timeSince.save"].tap()
-        XCTAssertTrue(app.staticTexts["Late-night scrolling less"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts[editedName].waitForExistence(timeout: 5))
+        app.terminate()
+        app = launchApp(resetState: false)
+        tapTab(.timeSince, in: app)
+        XCTAssertTrue(app.staticTexts[editedName].waitForExistence(timeout: 5))
     }
 
     @MainActor
@@ -82,6 +89,9 @@ final class PersonalEditionTests: TendelmUITestCase {
         let option = app.buttons["Cards"].firstMatch
         XCTAssertTrue(option.waitForExistence(timeout: 5))
         option.tap()
+        XCTAssertTrue(option.waitForNonExistence(timeout: 5))
+        // Let the system menu's dismissal finish before a screenshot or tap.
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
     }
 
     @MainActor
