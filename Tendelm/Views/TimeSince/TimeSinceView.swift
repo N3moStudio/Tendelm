@@ -5,9 +5,10 @@ import TendelmCore
 struct TimeSinceView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.habitTheme) private var theme
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
     @Query(sort: \TimeSinceRecord.startedAt) private var records: [TimeSinceRecord]
     @State private var showsNew = false
-    @State private var undoIDs: [UUID: UUID] = [:]
+    @State private var undoAction: TimeSinceUndoAction?
     @State private var error: String?
     @State private var feedback = 0
 
@@ -38,10 +39,11 @@ struct TimeSinceView: View {
                 }
             }
             .background(Color.kadoBackground.ignoresSafeArea())
+            .timeSinceUndo($undoAction, perform: undo)
             .navigationTitle("Time since")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    Button { showsNew = true } label: { Label("New tracker", systemImage: "plus") }
+                    Button { undoAction = nil; showsNew = true } label: { Label("New tracker", systemImage: "plus") }
                         .accessibilityIdentifier("timeSince.new")
                 }
             }
@@ -82,10 +84,6 @@ struct TimeSinceView: View {
                         .accessibilityIdentifier("timeSince.reset.\(tracker.id)")
                         .disabled(now < tracker.currentStart)
                     Spacer(minLength: 8)
-                    if undoIDs[tracker.id] == tracker.orderedResets.last?.id, undoIDs[tracker.id] != nil {
-                        Button("Undo") { undo(tracker.id) }.frame(minHeight: 44)
-                            .accessibilityIdentifier("timeSince.undo.\(tracker.id)")
-                    }
                 }
             }
             .padding(18)
@@ -96,18 +94,23 @@ struct TimeSinceView: View {
     private func reset(_ id: UUID) {
         guard var value = records.first(where: { $0.id == id })?.snapshot else { return }
         do {
-            try value.reset(at: .now)
+            let change = try value.reset(at: .now)
             try TimeSinceStore().save(value, in: context)
-            undoIDs[id] = value.orderedResets.last?.id
+            undoAction = TimeSinceUndoAction(trackerID: id, change: .added(change),
+                lifetime: .seconds(voiceOverEnabled ? 20 : 6))
             feedback += 1
         } catch { self.error = String(localized: "The reset wasn't saved. Check the device time and try again.") }
     }
 
-    private func undo(_ id: UUID) {
-        guard var value = records.first(where: { $0.id == id })?.snapshot,
-              value.orderedResets.last?.id == undoIDs[id] else { return }
-        value.undoLastReset()
-        do { try TimeSinceStore().save(value, in: context); undoIDs[id] = nil; feedback += 1 }
+    private func undo() {
+        guard let action = undoAction,
+              var value = records.first(where: { $0.id == action.trackerID })?.snapshot else { return }
+        do {
+            guard try action.undo(in: &value) else { undoAction = nil; return }
+            try TimeSinceStore().save(value, in: context)
+            undoAction = nil
+            feedback += 1
+        }
         catch { self.error = error.localizedDescription }
     }
 }

@@ -7,6 +7,7 @@ struct TimeSinceDetailView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
     @Query private var records: [TimeSinceRecord]
     private enum Sheet: String, Identifiable {
         case edit, previousReset
@@ -14,7 +15,7 @@ struct TimeSinceDetailView: View {
     }
     @State private var sheet: Sheet?
     @State private var showsDelete = false
-    @State private var previousResetChange: PreviousResetChange?
+    @State private var undoAction: TimeSinceUndoAction?
     @State private var error: String?
     @State private var feedback = 0
 
@@ -39,11 +40,6 @@ struct TimeSinceDetailView: View {
                                     : AnyLayout(HStackLayout(spacing: 8))
                                 layout { resetActions(value, now: now) }
                                     .font(.subheadline)
-                                if !value.resets.isEmpty {
-                                    Button(previousResetChange == nil ? "Undo last reset" : "Undo added reset", systemImage: "arrow.uturn.backward") { undo() }
-                                        .frame(minHeight: 44)
-                                        .accessibilityIdentifier("timeSince.detail.undo")
-                                }
                             }.padding(.vertical, 8)
                         }
                     } footer: {
@@ -57,7 +53,12 @@ struct TimeSinceDetailView: View {
                                 Text(event.date, format: .dateTime.day().month().year().hour().minute().second())
                                     .font(.footnote).foregroundStyle(Color.kadoForegroundSecondary)
                             }
+                            .accessibilityElement(children: .combine)
                             .accessibilityIdentifier("timeSince.history.\(event.id)")
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button("Delete", systemImage: "trash", role: .destructive) { deleteReset(event.id) }
+                                    .accessibilityIdentifier("timeSince.history.delete.\(event.id)")
+                            }
                         }
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Start date")
@@ -72,14 +73,15 @@ struct TimeSinceDetailView: View {
             }
         }
         .background(Color.kadoBackground)
+        .timeSinceUndo($undoAction, perform: undo)
         .navigationTitle("Time since")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    Button("Edit", systemImage: "pencil") { sheet = .edit }
+                    Button("Edit", systemImage: "pencil") { undoAction = nil; sheet = .edit }
                         .accessibilityIdentifier("timeSince.edit")
-                    Button("Delete tracker", systemImage: "trash", role: .destructive) { showsDelete = true }
+                    Button("Delete tracker", systemImage: "trash", role: .destructive) { undoAction = nil; showsDelete = true }
                 } label: { Label("Tracker options", systemImage: "ellipsis") }
                 .accessibilityIdentifier("timeSince.options")
             }
@@ -108,20 +110,37 @@ struct TimeSinceDetailView: View {
     private func reset() {
         guard var value = tracker else { return }
         do {
-            try value.reset(at: .now)
+            let change = try value.reset(at: .now)
             try TimeSinceStore().save(value, in: context)
-            previousResetChange = nil
+            showUndo(.added(change))
             feedback += 1
         }
         catch { self.error = String(localized: "The reset wasn't saved. Check the device time and try again.") }
     }
 
     private func undo() {
-        guard var value = tracker else { return }
-        if let previousResetChange { value.undoPreviousReset(previousResetChange) }
-        else { value.undoLastReset() }
-        do { try TimeSinceStore().save(value, in: context); previousResetChange = nil; feedback += 1 }
+        guard var value = tracker, let action = undoAction else { return }
+        do {
+            guard try action.undo(in: &value) else { undoAction = nil; return }
+            try TimeSinceStore().save(value, in: context)
+            undoAction = nil
+            feedback += 1
+        }
         catch { self.error = error.localizedDescription }
+    }
+
+    private func deleteReset(_ id: UUID) {
+        guard var value = tracker, let event = value.deleteReset(id: id) else { return }
+        do {
+            try TimeSinceStore().save(value, in: context)
+            showUndo(.deleted(event))
+            feedback += 1
+        } catch { self.error = error.localizedDescription }
+    }
+
+    private func showUndo(_ change: TimeSinceUndoAction.Change) {
+        undoAction = TimeSinceUndoAction(trackerID: trackerID, change: change,
+            lifetime: .seconds(voiceOverEnabled ? 20 : 6))
     }
 
     @ViewBuilder
@@ -134,7 +153,7 @@ struct TimeSinceDetailView: View {
             .buttonStyle(.bordered)
             .accessibilityIdentifier("timeSince.detail.reset")
             .disabled(now < value.currentStart)
-        Button { sheet = .previousReset } label: {
+        Button { undoAction = nil; sheet = .previousReset } label: {
             Text("Log a previous reset")
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .fixedSize(horizontal: false, vertical: true)
@@ -147,7 +166,7 @@ struct TimeSinceDetailView: View {
         guard var value = tracker else { throw TimeSinceError.invalidTracker }
         let change = try value.recordPreviousReset(at: date)
         try TimeSinceStore().save(value, in: context)
-        previousResetChange = change
+        showUndo(.added(change))
         feedback += 1
     }
 }

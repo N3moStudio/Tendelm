@@ -10,21 +10,22 @@ final class PersonalEditionTests: TendelmUITestCase {
         let detailID = detail.identifier
         detail.tap()
         app.buttons["timeSince.detail.reset"].tap()
-        let before = app.staticTexts.matching(NSPredicate(format: "label == 'Reset logged'")).count
+        let before = historyRows(in: app).count
         let previous = app.buttons["timeSince.detail.previous"]
         XCTAssertTrue(previous.exists)
         previous.tap()
         XCTAssertTrue(app.datePickers["timeSince.previous.date"].waitForExistence(timeout: 5))
         app.buttons["Cancel"].tap()
-        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label == 'Reset logged'")).count, before)
+        XCTAssertEqual(historyRows(in: app).count, before)
         previous.tap()
         photograph(app, "09-previous-reset-picker")
         app.buttons["timeSince.previous.save"].tap()
         XCTAssertTrue(previous.waitForExistence(timeout: 5))
-        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label == 'Reset logged'")).count, before + 1)
-        XCTAssertTrue(app.buttons["timeSince.detail.undo"].label.contains("Undo added reset"))
-        app.buttons["timeSince.detail.undo"].tap()
-        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label == 'Reset logged'")).count, before)
+        XCTAssertEqual(historyRows(in: app).count, before + 1)
+        XCTAssertTrue(app.buttons["timeSince.undo"].exists)
+        app.buttons["timeSince.undo"].tap()
+        XCTAssertTrue(app.buttons["timeSince.undo"].waitForNonExistence(timeout: 2))
+        XCTAssertEqual(historyRows(in: app).count, before)
         previous.tap()
         app.buttons["timeSince.previous.save"].tap()
         XCTAssertTrue(previous.waitForExistence(timeout: 5))
@@ -33,7 +34,8 @@ final class PersonalEditionTests: TendelmUITestCase {
         tapTab(.timeSince, in: app)
         app.buttons[detailID].tap()
         XCTAssertTrue(app.buttons["timeSince.detail.previous"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label == 'Reset logged'")).count, before + 1)
+        XCTAssertEqual(historyRows(in: app).count, before + 1)
+        XCTAssertFalse(app.buttons["timeSince.undo"].exists)
     }
 
     @MainActor
@@ -112,7 +114,7 @@ final class PersonalEditionTests: TendelmUITestCase {
         wait(for: [starts], timeout: 30)
         XCTAssertFalse(app.staticTexts["timeSince.scheduled"].exists)
         reset.tap()
-        XCTAssertTrue(app.buttons["timeSince.detail.undo"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["timeSince.undo"].waitForExistence(timeout: 5))
     }
 
     @MainActor
@@ -127,19 +129,21 @@ final class PersonalEditionTests: TendelmUITestCase {
         let firstID = String(resets.element(boundBy: 0).identifier.dropFirst("timeSince.reset.".count))
         let secondID = String(resets.element(boundBy: 1).identifier.dropFirst("timeSince.reset.".count))
         resets.element(boundBy: 0).tap()
-        XCTAssertTrue(app.buttons["timeSince.undo.\(firstID)"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["timeSince.undo.\(secondID)"].exists)
-        app.buttons["timeSince.undo.\(firstID)"].tap()
-        XCTAssertFalse(app.buttons["timeSince.undo.\(firstID)"].exists)
+        XCTAssertTrue(app.buttons["timeSince.undo"].waitForExistence(timeout: 5))
+        app.buttons["timeSince.undo"].tap()
+        XCTAssertTrue(app.buttons["timeSince.undo"].waitForNonExistence(timeout: 2))
         app.buttons["timeSince.reset.\(firstID)"].tap()
+        app.buttons["timeSince.reset.\(secondID)"].tap()
+        app.buttons["timeSince.undo"].tap()
+        XCTAssertTrue(app.buttons["timeSince.undo"].waitForNonExistence(timeout: 2))
         app.terminate()
         app = launchApp(resetState: false)
         tapTab(.timeSince, in: app)
         XCTAssertEqual(buttons("timeSince.reset.", in: app).count, 2)
         app.buttons["timeSince.detail.\(firstID)"].tap()
-        XCTAssertTrue(app.buttons["timeSince.detail.undo"].waitForExistence(timeout: 5))
-        app.buttons["timeSince.detail.undo"].tap()
-        XCTAssertFalse(app.buttons["timeSince.detail.undo"].exists)
+        XCTAssertTrue(app.buttons["timeSince.detail.reset"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["timeSince.undo"].exists)
+        XCTAssertEqual(historyRows(in: app).count, 1)
         app.buttons["timeSince.options"].tap()
         app.buttons["timeSince.edit"].tap()
         let field = nameField(in: app)
@@ -156,6 +160,96 @@ final class PersonalEditionTests: TendelmUITestCase {
         app = launchApp(resetState: false)
         tapTab(.timeSince, in: app)
         XCTAssertTrue(app.staticTexts[editedName].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testRecentUndoExpiresAndDoesNotWalkHistory() {
+        let app = launchApp(seedProduction: true, seedTimeSince: true)
+        tapTab(.timeSince, in: app)
+        buttons("timeSince.detail.", in: app).firstMatch.tap()
+        let reset = app.buttons["timeSince.detail.reset"]
+        XCTAssertTrue(reset.waitForExistence(timeout: 5))
+        let before = historyRows(in: app).count
+        let undo = app.buttons["timeSince.undo"]
+        XCTAssertFalse(undo.exists)
+        reset.tap()
+        XCTAssertTrue(undo.waitForExistence(timeout: 2))
+        photograph(app, "11-recent-undo")
+        XCTAssertTrue(undo.waitForNonExistence(timeout: 9))
+        XCTAssertEqual(historyRows(in: app).count, before + 1)
+        reset.tap()
+        XCTAssertTrue(undo.waitForExistence(timeout: 2))
+        undo.tap()
+        XCTAssertTrue(undo.waitForNonExistence(timeout: 2))
+        XCTAssertEqual(historyRows(in: app).count, before + 1)
+    }
+
+    @MainActor
+    func testSwipeDeleteHistoryUndoAndRelaunch() {
+        var app = launchApp(seedProduction: true, seedTimeSince: true)
+        tapTab(.timeSince, in: app)
+        let detail = buttons("timeSince.detail.", in: app).firstMatch
+        let detailID = detail.identifier
+        detail.tap()
+        let reset = app.buttons["timeSince.detail.reset"]
+        XCTAssertTrue(reset.waitForExistence(timeout: 5))
+        reset.tap()
+        reset.tap()
+        let rows = historyRows(in: app)
+        let count = rows.count
+        let rowID = rows.firstMatch.identifier
+        let deleteID = rowID.replacingOccurrences(of: "timeSince.history.", with: "timeSince.history.delete.")
+        rows.firstMatch.swipeLeft()
+        let delete = app.buttons[deleteID]
+        XCTAssertTrue(delete.waitForExistence(timeout: 3))
+        delete.tap()
+        let undo = app.buttons["timeSince.undo"]
+        XCTAssertTrue(undo.waitForExistence(timeout: 2))
+        undo.tap()
+        XCTAssertTrue(undo.waitForNonExistence(timeout: 2))
+        XCTAssertEqual(historyRows(in: app).count, count)
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: rowID).firstMatch.exists)
+        app.descendants(matching: .any).matching(identifier: rowID).firstMatch.swipeLeft()
+        XCTAssertTrue(delete.waitForExistence(timeout: 3))
+        delete.tap()
+        photograph(app, "12-deleted-history-undo")
+        XCTAssertTrue(undo.waitForNonExistence(timeout: 9))
+        XCTAssertEqual(historyRows(in: app).count, count - 1)
+        app.terminate()
+        app = launchApp(resetState: false)
+        tapTab(.timeSince, in: app)
+        app.buttons[detailID].tap()
+        XCTAssertTrue(app.buttons["timeSince.detail.reset"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.descendants(matching: .any).matching(identifier: rowID).firstMatch.exists)
+        XCTAssertEqual(historyRows(in: app).count, count - 1)
+        XCTAssertFalse(app.buttons["timeSince.undo"].exists)
+    }
+
+    @MainActor
+    private func historyRows(in app: XCUIApplication) -> XCUIElementQuery {
+        app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@ AND NOT identifier BEGINSWITH %@", "timeSince.history.", "timeSince.history.delete."))
+    }
+
+    @MainActor
+    func testRecentUndoAtLargeText() {
+        let app = launchApp(seedProduction: true, seedTimeSince: true,
+            contentSize: "UICTContentSizeCategoryAccessibilityXXXL")
+        tapTab(.timeSince, in: app)
+        buttons("timeSince.detail.", in: app).firstMatch.tap()
+        let reset = app.buttons["timeSince.detail.reset"]
+        XCTAssertTrue(reset.waitForExistence(timeout: 5))
+        for _ in 0..<6 {
+            if reset.isHittable { break }
+            app.swipeUp()
+        }
+        XCTAssertTrue(reset.isHittable)
+        reset.tap()
+        let undo = app.buttons["timeSince.undo"]
+        XCTAssertTrue(undo.waitForExistence(timeout: 2))
+        photograph(app, "13-large-text-undo")
+        XCTAssertTrue(undo.isHittable)
+        undo.tap()
+        XCTAssertTrue(undo.waitForNonExistence(timeout: 2))
     }
 
     @MainActor

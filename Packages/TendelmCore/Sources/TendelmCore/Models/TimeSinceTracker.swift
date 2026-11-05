@@ -33,9 +33,12 @@ public struct TimeSinceTracker: Identifiable, Hashable, Codable, Sendable {
 
     public var currentStart: Date { max(startedAt, orderedResets.last?.date ?? startedAt) }
 
-    public mutating func reset(at date: Date) throws {
+    @discardableResult
+    public mutating func reset(at date: Date) throws -> PreviousResetChange {
         guard date >= currentStart else { throw TimeSinceError.clockMovedBackwards }
-        resets.append(TimeSinceReset(date: date))
+        let event = TimeSinceReset(date: date)
+        resets.append(event)
+        return PreviousResetChange(reset: event, originalStart: startedAt, adjustedStart: startedAt)
     }
 
     /// Backfill a real occurrence without replacing later history. An event
@@ -65,6 +68,20 @@ public struct TimeSinceTracker: Identifiable, Hashable, Codable, Sendable {
     public mutating func undoLastReset() {
         guard let last = orderedResets.last else { return }
         resets.removeAll { $0.id == last.id }
+    }
+
+    /// Remove one selected occurrence. The initial start and other history stay intact.
+    @discardableResult
+    public mutating func deleteReset(id: UUID) -> TimeSinceReset? {
+        guard let index = resets.firstIndex(where: { $0.id == id }) else { return nil }
+        return resets.remove(at: index)
+    }
+
+    public mutating func restoreReset(_ event: TimeSinceReset) throws {
+        if resets.contains(event) { return }
+        guard event.date.timeIntervalSince1970.isFinite, event.date >= startedAt,
+              !resets.contains(where: { $0.id == event.id }) else { throw TimeSinceError.invalidTracker }
+        resets.append(event)
     }
 
     public func validate() throws {

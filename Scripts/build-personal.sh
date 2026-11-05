@@ -113,6 +113,7 @@ run_xcode iphone-dark test-without-building -project Tendelm.xcodeproj -scheme T
   -resultBundlePath "$out/iPhone-Dark.xcresult" \
   -only-testing:TendelmUITests/PersonalEditionTests/testCapturePersonalScreens \
   -only-testing:TendelmUITests/PersonalEditionTests/testExternalImportEntryAndHelp \
+  -only-testing:TendelmUITests/PersonalEditionTests/testSwipeDeleteHistoryUndoAndRelaunch \
   -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO
 ipad_id=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(v["udid"] for a in d["devices"].values() for v in a if "iPad" in v["name"]))')
 xcrun simctl boot "$ipad_id" 2>/dev/null || true
@@ -122,6 +123,7 @@ run_xcode ipad-ui test-without-building -project Tendelm.xcodeproj -scheme Tende
   -resultBundlePath "$out/iPad.xcresult" \
   -only-testing:TendelmUITests/PersonalEditionTests/testCapturePersonalScreens \
   -only-testing:TendelmUITests/PersonalEditionTests/testExternalImportEntryAndHelp \
+  -only-testing:TendelmUITests/PersonalEditionTests/testSwipeDeleteHistoryUndoAndRelaunch \
   -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO
 run_xcode device-build build -project Tendelm.xcodeproj -scheme Tendelm -configuration Release \
   -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath "$out/DeviceBuild" CODE_SIGNING_ALLOWED=NO

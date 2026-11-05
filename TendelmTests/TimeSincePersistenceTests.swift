@@ -12,6 +12,27 @@ struct TimeSincePersistenceTests {
             configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)).usingExplicitTestSaves()
     }
 
+    @Test("Deleting and undoing a history row restores its identity after saving")
+    func deletedHistoryUndoRoundTrip() throws {
+        let container = try memoryStore()
+        let store = TimeSinceStore()
+        var tracker = TimeSinceTracker(name: "Coffee", startedAt: start)
+        try tracker.reset(at: start.addingTimeInterval(10))
+        try tracker.reset(at: start.addingTimeInterval(20))
+        try store.save(tracker, in: container.mainContext)
+        let original = tracker.orderedResets
+        let event = try #require(tracker.deleteReset(id: original[0].id))
+        try store.save(tracker, in: container.mainContext)
+        let afterDelete = try #require(ModelContext(container).fetch(FetchDescriptor<TimeSinceRecord>()).first?.snapshot)
+        #expect(afterDelete.orderedResets == [original[1]])
+        let action = TimeSinceUndoAction(trackerID: tracker.id, change: .deleted(event))
+        #expect(try action.undo(in: &tracker))
+        try store.save(tracker, in: container.mainContext)
+        let restored = try #require(ModelContext(container).fetch(FetchDescriptor<TimeSinceRecord>()).first?.snapshot)
+        #expect(restored.orderedResets == original)
+        #expect(restored.startedAt == start)
+    }
+
     @Test("Backfilled history and its earlier baseline survive persistence and backups")
     func previousResetRoundTrip() throws {
         let container = try memoryStore()
