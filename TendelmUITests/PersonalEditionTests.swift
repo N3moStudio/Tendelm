@@ -72,7 +72,7 @@ final class PersonalEditionTests: TendelmUITestCase {
         let fifteenth = app.buttons.matching(NSPredicate(format: "label CONTAINS '15'")).firstMatch
         XCTAssertTrue(fifteenth.exists, app.debugDescription)
         fifteenth.tap()
-        let dismissRegion = app.otherElements["PopoverDismissRegion"].firstMatch
+        let dismissRegion = app.descendants(matching: .any).matching(identifier: "PopoverDismissRegion").firstMatch
         XCTAssertTrue(dismissRegion.waitForExistence(timeout: 5), app.debugDescription)
         dismissRegion.tap()
         XCTAssertTrue(next.waitForNonExistence(timeout: 5))
