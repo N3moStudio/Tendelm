@@ -1,0 +1,51 @@
+{
+  "source": "branding\\tendelm\\Tendelm-01.png",
+  "platform": "ios",
+  "role": "flattened",
+  "width": 1024,
+  "height": 1024,
+  "mode": "RGB",
+  "format": "PNG",
+  "icc_profile_present": false,
+  "alpha_present": false,
+  "alpha_min": 255,
+  "alpha_max": 255,
+  "nonopaque_pixels": 0,
+  "alpha_content_box": [
+    0,
+    0,
+    1024,
+    1024
+  ],
+  "corner_alpha_max": 255,
+  "corner_luma_range": 20.0,
+  "edge_luma_range": 20.0,
+  "preview_mask": "rounded-rectangle",
+  "findings": [
+    {
+      "severity": "warning",
+      "code": "icc-profile",
+      "message": "No embedded ICC profile was detected. Confirm sRGB, Display P3, or Gray Gamma 2.2 in the production source."
+    }
+  ],
+  "preview_files": [
+    "branding\\tendelm\\previews\\Tendelm-01-16x16px.png",
+    "branding\\tendelm\\previews\\Tendelm-01-20x20px.png",
+    "branding\\tendelm\\previews\\Tendelm-01-29x29px.png",
+    "branding\\tendelm\\previews\\Tendelm-01-40x40px.png",
+    "branding\\tendelm\\previews\\Tendelm-01-60x60px.png",
+    "branding\\tendelm\\previews\\Tendelm-01-76x76px.png",
+    "branding\\tendelm\\previews\\Tendelm-01-83x83px.png",
+    "branding\\tendelm\\previews\\Tendelm-01-128x128px.png",
+    "branding\\tendelm\\previews\\Tendelm-01-256x256px.png",
+    "branding\\tendelm\\previews\\Tendelm-01-ios-appearance-sheet.png",
+    "branding\\tendelm\\previews\\Tendelm-01-ios-context-board.png"
+  ],
+  "passed": true,
+  "limitations": [
+    "Static bitmap checks and approximate context previews only.",
+    "Preview masks are heuristics, not Apple's official mask geometry.",
+    "Mono and tinted previews are simulations, not Icon Composer renders.",
+    "Does not validate .icon structure, Xcode settings/builds, Simulator, device, App Store, or conversion."
+  ]
+}

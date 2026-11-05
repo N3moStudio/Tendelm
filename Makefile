@@ -1,8 +1,8 @@
-# Building and testing Kadō from the command line.
+# Building and testing Tendelm from the command line.
 #
 #   make build   build the app for the simulator
-#   make test    the unit suite (KadoTests)
-#   make e2e     the UI suite (KadoUITests) — drives the app in a simulator
+#   make test    the unit suite (TendelmTests)
+#   make e2e     the UI suite (TendelmUITests) — drives the app in a simulator
 #   make widgets-e2e  place each home widget on the Home Screen and check its pick
 #   make run     install and launch the app on this worktree's simulator
 #   make shot    screenshot that simulator
@@ -36,7 +36,7 @@ SIMULATOR ?= iPhone 17 Pro
 # they came from, so even the clones would collide. This repo is worked
 # on from parallel `.claude/worktrees/` checkouts, so that is the normal
 # case rather than the exotic one.
-SIM_NAME  ?= Kado $(notdir $(CURDIR))
+SIM_NAME  ?= Tendelm $(notdir $(CURDIR))
 
 # XCUITest parallelises by test *class*, cloning a simulator per worker.
 # Keep suites small and similar in size, or one long class becomes a pole
@@ -47,9 +47,9 @@ SIM_NAME  ?= Kado $(notdir $(CURDIR))
 WORKERS   ?= 3
 PARALLEL  := -parallel-testing-enabled YES -maximum-parallel-testing-workers $(WORKERS)
 
-SCHEME      := Kado
-PROJECT     := Kado.xcodeproj
-BUNDLE_ID   := dev.scastiel.kado
+SCHEME      := Tendelm
+PROJECT     := Tendelm.xcodeproj
+BUNDLE_ID   := com.n3mostudio.tendelm
 DERIVED     := build
 DESTINATION := platform=iOS Simulator,name=$(SIM_NAME)
 
@@ -62,9 +62,9 @@ DESTINATION := platform=iOS Simulator,name=$(SIM_NAME)
 export SIGN_IDENTITY
 
 # Deliberately *not* CODE_SIGNING_ALLOWED=NO, tempting as it is for a
-# simulator build. Kadō's app target carries entitlements — iCloud and
+# simulator build. Tendelm's app target carries entitlements — iCloud and
 # the App Group — and an unsigned build has none of them, so
-# `CKContainer(identifier:)` traps on the first line of `KadoApp.init()`
+# `CKContainer(identifier:)` traps on the first line of `TendelmApp.init()`
 # with EXC_BREAKPOINT and every UI test "fails" at launch for a reason
 # that has nothing to do with what it was testing. Simulator builds are
 # signed to run locally, which costs nothing and needs no device.
@@ -73,17 +73,17 @@ export SIGN_IDENTITY
 # app for the App Store listing, and it asserts nothing a suite would miss.
 # `make screenshots` runs it, on devices of its own with a pinned clock, a pinned
 # appearance and a pinned language; every other run leaves it alone.
-SKIP_SCREENSHOTS := -skip-testing:KadoUITests/ScreenshotTests
+SKIP_SCREENSHOTS := -skip-testing:TendelmUITests/ScreenshotTests
 
 # `HomeScreenWidgetTests` is a real test but drives SpringBoard rather than
-# Kadō: over a minute per tile, and at the mercy of Apple's accessibility
+# Tendelm: over a minute per tile, and at the mercy of Apple's accessibility
 # labels for the Home Screen's own buttons. `make widgets-e2e` runs it;
 # `make e2e` leaves it alone.
-SKIP_WIDGETS := -skip-testing:KadoUITests/HomeScreenWidgetTests
+SKIP_WIDGETS := -skip-testing:TendelmUITests/HomeScreenWidgetTests
 
 # `HabitPaletteCaptureTests` photographs each paid habit palette for a PR's
 # record and asserts nothing more than that the screens were reached.
-SKIP_PALETTES := -skip-testing:KadoUITests/HabitPaletteCaptureTests
+SKIP_PALETTES := -skip-testing:TendelmUITests/HabitPaletteCaptureTests
 
 # The App Store Connect API key. `Scripts/appstore.py` finds the .p8 itself, by
 # key ID, in ~/.appstoreconnect/private_keys — the issuer is the half that can't
@@ -129,21 +129,21 @@ build: sim ## Build the app for the simulator
 # this scheme are real suites and each target runs one of them. Splitting
 # them keeps `make test` at the couple of seconds it has always been —
 # a UI run boots simulators and takes minutes.
-test: sim ## Run the unit suite (KadoTests)
+test: sim ## Run the unit suite (TendelmTests)
 	@xcodebuild test \
 		-project $(PROJECT) -scheme $(SCHEME) \
 		-destination '$(DESTINATION)' \
 		-derivedDataPath $(DERIVED) \
-		-only-testing:KadoTests \
+		-only-testing:TendelmTests \
 		-quiet
 
-e2e: sim ## Run the UI suite (KadoUITests) against the simulator
+e2e: sim ## Run the UI suite (TendelmUITests) against the simulator
 	@xcodebuild test \
 		-project $(PROJECT) -scheme $(SCHEME) \
 		-destination '$(DESTINATION)' \
 		-derivedDataPath $(DERIVED) \
 		$(PARALLEL) \
-		-only-testing:KadoUITests \
+		-only-testing:TendelmUITests \
 		$(SKIP_SCREENSHOTS) \
 		$(SKIP_WIDGETS) \
 		$(SKIP_PALETTES) \
@@ -154,7 +154,7 @@ e2e: sim ## Run the UI suite (KadoUITests) against the simulator
 # Built, re-signed, then run: the re-sign is what lets the widget extension
 # decode its pick on an iOS 26.x simulator (see `run` below), and
 # `test-without-building` installs the products as they are on disk. Serial,
-# because each test clears every Kadō widget off the Home Screen before it
+# because each test clears every Tendelm widget off the Home Screen before it
 # places its own, and a clone per test would boot three more simulators.
 widgets-e2e: sim ## Place each home widget on the Home Screen and check it draws its pick
 	@xcodebuild build-for-testing \
@@ -163,13 +163,13 @@ widgets-e2e: sim ## Place each home widget on the Home Screen and check it draws
 		-derivedDataPath $(DERIVED) \
 		-quiet
 	@Scripts/resign-simulator.sh \
-		"$$(find $(DERIVED)/Build/Products -name 'Kado.app' -maxdepth 3 | head -1)"
+		"$$(find $(DERIVED)/Build/Products -name 'Tendelm.app' -maxdepth 3 | head -1)"
 	@xcodebuild test-without-building \
 		-project $(PROJECT) -scheme $(SCHEME) \
 		-destination '$(DESTINATION)' \
 		-derivedDataPath $(DERIVED) \
 		-parallel-testing-enabled NO \
-		-only-testing:KadoUITests/HomeScreenWidgetTests \
+		-only-testing:TendelmUITests/HomeScreenWidgetTests \
 		-quiet
 
 # Named rather than `booted`, which is a coin toss the moment anything
@@ -181,9 +181,9 @@ run: build ## Install and launch the app on this worktree's simulator
 		|| open -a "$$(xcode-select -p)/../Applications/DeviceHub.app" 2>/dev/null \
 		|| true
 	@Scripts/resign-simulator.sh \
-		"$$(find $(DERIVED)/Build/Products -name 'Kado.app' -maxdepth 3 | head -1)"
+		"$$(find $(DERIVED)/Build/Products -name 'Tendelm.app' -maxdepth 3 | head -1)"
 	@xcrun simctl install '$(SIM_NAME)' \
-		"$$(find $(DERIVED)/Build/Products -name 'Kado.app' -maxdepth 3 | head -1)"
+		"$$(find $(DERIVED)/Build/Products -name 'Tendelm.app' -maxdepth 3 | head -1)"
 	@xcrun simctl launch --console-pty '$(SIM_NAME)' $(BUNDLE_ID)
 
 shot: ## Screenshot this worktree's simulator to build/screenshot.png
@@ -243,9 +243,9 @@ asc-credentials:
 
 # Release. The archive and the .ipa are separate steps so a rejected upload can be retried
 # without rebuilding — an archive is minutes, an upload is seconds.
-ARCHIVE := $(DERIVED)/Kado.xcarchive
+ARCHIVE := $(DERIVED)/Tendelm.xcarchive
 EXPORT  := $(DERIVED)/export
-IPA     := $(EXPORT)/Kado.ipa
+IPA     := $(EXPORT)/Tendelm.ipa
 
 # Signing assets are issued on demand through the same API key the listing uses, so a machine
 # without a distribution certificate can still archive. That *creates* account-level assets the

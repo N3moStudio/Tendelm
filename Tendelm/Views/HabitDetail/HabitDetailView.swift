@@ -1,0 +1,629 @@
+import SwiftData
+import SwiftUI
+import TendelmCore
+
+/// Detail screen for a single habit. Shows score, streak, frequency,
+/// type, and a current-month completion grid. Toolbar actions open
+/// the edit sheet and present an archive confirmation dialog. Once
+/// the habit is archived the screen is read-only and the toolbar
+/// offers **Unarchive** and a confirmed **Delete** instead — the
+/// only place besides Settings › Archived habits that deletes, by
+/// design (issue #99).
+///
+/// Renders from value-type snapshots and never stores a
+/// `HabitRecord`. `HabitDetailLoader` re-resolving the id on every
+/// render is necessary but *not* sufficient on its own: SwiftUI
+/// re-evaluates this view's retained struct against the previous
+/// store's record before the loader's re-resolution reaches it, and
+/// reading `habit.name` off an invalidated object traps inside
+/// SwiftData. Holding only structs means there is nothing left to
+/// invalidate; mutations resolve the record by id against the current
+/// `@Query` (issue #63).
+///
+/// **Mutations resolve the record from the same `@Query` whose
+/// results the screen rendered from — the loader's, handed down as
+/// `resolveRecord`.** Two shapes left the screen frozen on value-only
+/// saves (a counter stepped a second time, a timer re-logged): the
+/// save landed in the store and never re-rendered `HabitDetailLoader`,
+/// so the popover, the quick-log, score, streak and history all stuck
+/// together while an insert or delete, which changes the query's
+/// result set, still woke it up. First a `modelContext.fetch(…)` in
+/// each mutation (issue #80: a fetch between a view's tracked read and
+/// the mutation leaves the observer un-notified even for the same
+/// instance, `ObservationAfterFetchTests`). Then a second `@Query` of
+/// this view's own, which fixed #80 on iOS 26 and froze again on
+/// iOS 27 (issue #124). One query, read in the loader's body and
+/// resolved from in the mutation, is `OverviewView`'s and `TodayView`'s
+/// shape and holds on both runtimes; don't add a query here.
+struct HabitDetailView: View {
+    let habit: Habit
+    let completions: [Completion]
+
+    /// The live record, looked up in `HabitDetailLoader`'s `@Query`.
+    /// Called from mutations only, never from `body` — see the type
+    /// comment for why it isn't a query of this view's own.
+    let resolveRecord: () -> HabitRecord?
+
+    @Environment(\.habitScoreCalculator) private var scoreCalculator
+    @Environment(\.streakCalculator) private var streakCalculator
+    @Environment(\.calendar) private var calendar
+    @Environment(\.today) private var today
+    @Environment(\.dayBoundary) private var dayBoundary
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    @State private var showingEdit = false
+    @State private var showingArchiveConfirmation = false
+    @State private var showingDeleteConfirmation = false
+    @State private var showingTimerSheet = false
+    @State private var showingScoreInfo = false
+    @State private var editingDay: Date? = nil
+    /// The latest quick-log or popover step, for the haptic — one seam
+    /// for both, so a popover step on today doesn't also tick through
+    /// the quick-log control that displays the same value.
+    @State private var quickLog: QuickLogEvent?
+    /// Seeded in `.onAppear` rather than defaulted to `.now`: `@State`
+    /// is initialised before the environment is injected, so a wall-clock
+    /// default would leak in ahead of `\.today` and open the grid on the
+    /// wrong month before the rollover on the 1st.
+    @State private var displayedMonth: Date?
+
+    private var isArchived: Bool { habit.archivedAt != nil }
+
+    /// The live record behind this screen, resolved against the store
+    /// that is mounted now. Called from mutations only — never from a
+    /// `body`, which is the whole point. A Swift-side lookup in the
+    /// loader's query, never a `fetch` — see the type comment.
+    private var record: HabitRecord? {
+        resolveRecord()
+    }
+
+    /// The live record behind one snapshotted completion, walked from
+    /// `record`'s relationship for the same reason.
+    private func completionRecord(for snapshot: Completion) -> CompletionRecord? {
+        record?.completions?.first { $0.id == snapshot.id }
+    }
+
+    private var trackingSinceLabel: String? {
+        let effective = habit.effectiveStart(completions: completions, calendar: calendar)
+        let createdDay = calendar.startOfDay(for: habit.createdAt)
+        let effectiveDay = calendar.startOfDay(for: effective)
+        guard effectiveDay != createdDay else { return nil }
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.locale = calendar.locale ?? .current
+        formatter.dateStyle = .medium
+        return String(localized: "Tracking since \(formatter.string(from: effective))")
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                header
+                metricsRow
+                quickLogSection
+                MonthlyCalendarView(
+                    habit: habit,
+                    completions: completions,
+                    month: Binding(
+                        get: { displayedMonth ?? today },
+                        set: { displayedMonth = $0 }
+                    ),
+                    selectedDay: isArchived ? .constant(nil) : $editingDay,
+                    navigable: true,
+                    popoverContent: { day in
+                        DayEditPopover(
+                            habit: habit,
+                            date: day,
+                            currentValue: currentValue(on: day),
+                            currentNote: currentNote(on: day),
+                            onToggle: { toggle(on: day) },
+                            onSetCounter: { value in setCounter(value, on: day) },
+                            onSetTimerSeconds: { seconds in setTimerSeconds(seconds, on: day) },
+                            onClear: { clear(on: day) },
+                            onNoteChanged: { note in setNote(note, on: day) },
+                            backdatesStart: habit.loggingBackdatesStart(
+                                on: day, completions: completions, calendar: calendar
+                            )
+                        )
+                        .presentationCompactAdaptation(.popover)
+                    }
+                )
+                CompletionHistoryList(
+                    habitType: habit.type,
+                    completions: completions,
+                    onDelete: historyDelete
+                )
+            }
+            .padding()
+        }
+        .scrollContentBackground(.hidden)
+        .background(Color.kadoBackground.ignoresSafeArea())
+        .quickLogFeedback(quickLog)
+        .onAppear { if displayedMonth == nil { displayedMonth = today } }
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if isArchived {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(
+                        String(localized: "Unarchive"),
+                        systemImage: "arrow.uturn.backward"
+                    ) {
+                        unarchive()
+                    }
+                    .accessibilityIdentifier(AccessibilityID.HabitDetail.unarchiveButton)
+                }
+                ToolbarItem(placement: .secondaryAction) {
+                    Button(
+                        String(localized: "Delete"),
+                        systemImage: "trash",
+                        role: .destructive
+                    ) {
+                        showingDeleteConfirmation = true
+                    }
+                    .accessibilityIdentifier(AccessibilityID.HabitDetail.deleteButton)
+                }
+            } else {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(String(localized: "Edit")) {
+                        showingEdit = true
+                    }
+                }
+                ToolbarItem(placement: .secondaryAction) {
+                    Button(
+                        String(localized: "Archive"),
+                        systemImage: "archivebox"
+                    ) {
+                        showingArchiveConfirmation = true
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showingEdit) {
+            if let record {
+                NewHabitFormView(model: NewHabitFormModel(editing: record))
+            } else {
+                HabitUnavailableView()
+            }
+        }
+        .sheet(isPresented: $showingTimerSheet) {
+            if let record {
+                TimerLogSheet(habit: record)
+            } else {
+                HabitUnavailableView()
+            }
+        }
+        .confirmationDialog(
+            String(localized: "Archive this habit?"),
+            isPresented: $showingArchiveConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "Archive"), role: .destructive) {
+                archive()
+            }
+            Button(String(localized: "Cancel"), role: .cancel) {}
+        } message: {
+            Text("Archived habits leave Today but keep their history. You can find them in Settings › Archived habits.")
+        }
+        .confirmationDialog(
+            Text("Delete “\(habit.name)”?"),
+            isPresented: $showingDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "Delete"), role: .destructive) {
+                delete()
+            }
+            .accessibilityIdentifier(AccessibilityID.HabitDetail.deleteConfirmButton)
+            Button(String(localized: "Cancel"), role: .cancel) {}
+        } message: {
+            Text("This permanently deletes the habit and all of its history. This can’t be undone.")
+        }
+    }
+
+    /// The instant to stamp on anything logged right now — see the
+    /// matching helper on `TodayView`.
+    private var loggingInstant: Date {
+        dayBoundary.loggingInstant(for: .now, on: today)
+    }
+
+    private func archive() {
+        guard let record else { return }
+        HabitLifecycle().archive(record, at: loggingInstant, in: modelContext)
+        WidgetReloader.reloadAll(using: modelContext)
+        dismiss()
+    }
+
+    /// Pops, like `archive` does: this screen was pushed from the
+    /// Archived list, and the habit has just left it.
+    private func unarchive() {
+        guard let record else { return }
+        HabitLifecycle().unarchive(record, in: modelContext)
+        WidgetReloader.reloadAll(using: modelContext)
+        dismiss()
+    }
+
+    /// Pops before the loader can re-resolve an id that no longer
+    /// exists and swap this screen for `HabitUnavailableView`.
+    private func delete() {
+        guard let record else { return }
+        HabitLifecycle().delete(record, in: modelContext)
+        WidgetReloader.reloadAll(using: modelContext)
+        dismiss()
+    }
+
+    // MARK: - Quick-log
+
+    @ViewBuilder
+    private var quickLogSection: some View {
+        switch habit.type {
+        case .counter(let target):
+            CounterQuickLogView(
+                target: target,
+                todayValue: todayCounterValue,
+                onIncrement: incrementCounter,
+                onDecrement: decrementCounter
+            )
+            .disabled(isArchived)
+        case .timer:
+            Button {
+                showingTimerSheet = true
+            } label: {
+                Label("Log a session", systemImage: "timer")
+                    .font(.body.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.accentColor.opacity(0.15))
+                    )
+                    .foregroundStyle(Color.accentColor)
+            }
+            .buttonStyle(.plain)
+            .disabled(isArchived)
+            .accessibilityIdentifier(AccessibilityID.HabitDetail.logSessionButton)
+        case .binary, .negative:
+            EmptyView()
+        }
+    }
+
+    private var todayCounterValue: Double {
+        completion(on: today)?.value ?? 0
+    }
+
+    private func incrementCounter() {
+        guard let record else { return }
+        let logger = CompletionLogger(calendar: calendar)
+        let before = logger.value(for: record, on: loggingInstant)
+        logger.incrementCounter(for: record, on: loggingInstant, in: modelContext)
+        recordQuickLog(from: before, to: before + 1)
+        try? modelContext.save()
+        WidgetReloader.reloadAll(using: modelContext)
+    }
+
+    private func decrementCounter() {
+        guard let record else { return }
+        let logger = CompletionLogger(calendar: calendar)
+        let before = logger.value(for: record, on: loggingInstant)
+        logger.decrementCounter(for: record, on: loggingInstant, in: modelContext)
+        recordQuickLog(from: before, to: max(0, before - 1))
+        try? modelContext.save()
+        WidgetReloader.reloadAll(using: modelContext)
+    }
+
+    /// Derived from the mutation, not read back: the store may still
+    /// hold a just-deleted record until the save lands.
+    private func recordQuickLog(from old: Double, to new: Double) {
+        guard let event = QuickLogEvent.next(after: quickLog, type: habit.type, oldValue: old, newValue: new) else {
+            return
+        }
+        quickLog = event
+    }
+
+    // MARK: - Past-day popover mutations
+
+    /// The snapshotted completion covering a day, if there is one.
+    private func completion(on day: Date) -> Completion? {
+        completions.first { calendar.isDate($0.date, inSameDayAs: day) }
+    }
+
+    private func currentValue(on day: Date) -> Double {
+        completion(on: day)?.value ?? 0
+    }
+
+    private func currentNote(on day: Date) -> String? {
+        completion(on: day)?.note
+    }
+
+    /// The popover's mutations, shared with the Overview matrix. Each
+    /// wrapper resolves the record here — from the loader's query —
+    /// and hands the editor's `Change` to the haptic.
+    private var dayEditor: DayCompletionEditor { DayCompletionEditor(calendar: calendar) }
+
+    private func toggle(on day: Date) {
+        guard let record else { return }
+        let change = dayEditor.toggle(for: record, on: day, in: modelContext)
+        recordQuickLog(from: change.before, to: change.after)
+    }
+
+    private func setCounter(_ value: Double, on day: Date) {
+        guard let record else { return }
+        let change = dayEditor.setCounter(value, for: record, on: day, in: modelContext)
+        recordQuickLog(from: change.before, to: change.after)
+    }
+
+    private func setTimerSeconds(_ seconds: TimeInterval, on day: Date) {
+        guard let record else { return }
+        let change = dayEditor.setTimerSeconds(seconds, for: record, on: day, in: modelContext)
+        recordQuickLog(from: change.before, to: change.after)
+    }
+
+    private func setNote(_ note: String?, on day: Date) {
+        guard let record else { return }
+        dayEditor.setNote(note, for: record, on: day, in: modelContext)
+    }
+
+    private func clear(on day: Date) {
+        guard let record else { return }
+        let change = dayEditor.clear(for: record, on: day, in: modelContext)
+        recordQuickLog(from: change.before, to: change.after)
+    }
+
+    /// What the History list gets to delete with: nothing once the
+    /// habit is archived, like every other mutation on this screen.
+    /// A `guard` rather than `isArchived ? nil : deleteCompletion` —
+    /// the ternary over a `@MainActor` method reference is one the
+    /// compiler can't type ("failed to produce diagnostic"), and
+    /// inline in the body it surfaces as "ambiguous use of 'init'" on
+    /// the enclosing `ScrollView`.
+    private var historyDelete: ((Completion) -> Void)? {
+        guard !isArchived else { return nil }
+        return { deleteCompletion($0) }
+    }
+
+    /// Delete from a History row's long-press menu.
+    private func deleteCompletion(_ snapshot: Completion) {
+        guard let existing = completionRecord(for: snapshot) else { return }
+        CompletionLogger(calendar: calendar).delete(existing, in: modelContext)
+        try? modelContext.save()
+        WidgetReloader.reloadAll(using: modelContext)
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(habit.name)
+                .kadoDisplay(size: 34)
+            HStack(spacing: 12) {
+                Label(frequencyLabel, systemImage: frequencyIcon)
+                Label(typeLabel, systemImage: typeIcon)
+            }
+            .font(.subheadline)
+            .foregroundStyle(Color.kadoForegroundSecondary)
+
+            if let trackingSince = trackingSinceLabel {
+                Label(trackingSince, systemImage: "calendar")
+                    .font(.caption)
+                    .foregroundStyle(Color.kadoForegroundSecondary)
+                    .padding(.top, 2)
+            }
+
+            if habit.archivedAt != nil {
+                Text("Archived")
+                    .font(.caption.weight(.medium))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule().fill(Color.kadoHairline)
+                    )
+                    .foregroundStyle(Color.kadoForegroundSecondary)
+                    .padding(.top, 4)
+            }
+        }
+    }
+
+    private var metricsRow: some View {
+        HStack(spacing: 12) {
+            scoreCard
+            metricCard(
+                title: String(localized: "Streak"),
+                value: String(localized: "\(currentStreak) / best \(bestStreak)"),
+                systemImage: "flame.fill"
+            )
+        }
+    }
+
+    private var scoreCard: some View {
+        Button {
+            showingScoreInfo = true
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 4) {
+                    Label("Score", systemImage: "chart.line.uptrend.xyaxis")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.kadoForegroundSecondary)
+                    Image(systemName: "info.circle")
+                        .font(.caption)
+                        .foregroundStyle(Color.kadoForegroundSecondary)
+                        .accessibilityHidden(true)
+                }
+                Text(scorePercent)
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(.primary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: TendelmRadius.card)
+                    .fill(Color.kadoBackgroundSecondary)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(AccessibilityID.HabitDetail.scoreCard)
+        .accessibilityHint(Text("Shows how the score is calculated."))
+        .sheet(isPresented: $showingScoreInfo) {
+            ScoreExplanationSheet()
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+        }
+    }
+
+    private func metricCard(title: String, value: String, systemImage: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(title, systemImage: systemImage)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.kadoForegroundSecondary)
+            Text(value)
+                .font(.title2.weight(.bold))
+                .foregroundStyle(.primary)
+                // Half a phone's width is tight for "37 / meilleure 37":
+                // on the iPhone Duo's outer display French broke it after
+                // "meilleure" (issue #140). Shrunk a little to stay on one
+                // line, except at accessibility sizes, where shrinking
+                // enough to fit would undo the size the user asked for.
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                .minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: TendelmRadius.card)
+                .fill(Color.kadoBackgroundSecondary)
+        )
+    }
+
+    // MARK: - Computed metrics
+
+    private var scorePercent: String {
+        let score = scoreCalculator.currentScore(
+            for: habit,
+            completions: completions,
+            asOf: today
+        )
+        return "\(Int((score * 100).rounded()))%"
+    }
+
+    private var currentStreak: Int {
+        streakCalculator.current(for: habit, completions: completions, asOf: today)
+    }
+
+    private var bestStreak: Int {
+        streakCalculator.best(for: habit, completions: completions, asOf: today)
+    }
+
+    private var frequencyLabel: String {
+        switch habit.frequency {
+        case .daily:
+            return String(localized: "Every day")
+        case .daysPerWeek(let n):
+            return String(localized: "\(n) days per week")
+        case .specificDays(let days):
+            let ordered = Weekday.week(startingOn: calendar.firstWeekday)
+            let labels = ordered.filter(days.contains).map(\.localizedMedium)
+            return labels.joined(separator: " · ")
+        case .everyNDays(let n):
+            return String(localized: "Every \(n) days")
+        }
+    }
+
+    private var frequencyIcon: String {
+        switch habit.frequency {
+        case .daily: "calendar"
+        case .daysPerWeek: "calendar.badge.clock"
+        case .specificDays: "calendar.day.timeline.left"
+        case .everyNDays: "clock.arrow.circlepath"
+        }
+    }
+
+    private var typeLabel: String {
+        switch habit.type {
+        case .binary: String(localized: "Yes / no")
+        case .counter(let target): String(localized: "Counter · target \(Int(target))")
+        case .timer(let seconds): String(localized: "Timer · target \(Int(seconds / 60)) min")
+        case .negative: String(localized: "Avoid")
+        }
+    }
+
+    private var typeIcon: String {
+        switch habit.type {
+        case .binary: "checkmark.circle"
+        case .counter: "number.circle"
+        case .timer: "timer"
+        case .negative: "hand.raised"
+        }
+    }
+
+}
+
+/// Small wrapper for previews — fetches a seeded habit from the
+/// preview container by name so the detail view sees a realistic
+/// populated record.
+private struct HabitDetailPreviewWrapper: View {
+    let habitName: String
+    let archived: Bool
+
+    @Query private var habits: [HabitRecord]
+
+    init(habitName: String, archived: Bool = false) {
+        self.habitName = habitName
+        self.archived = archived
+        _habits = Query(
+            filter: #Predicate<HabitRecord> { $0.name == habitName },
+            sort: \HabitRecord.createdAt
+        )
+    }
+
+    var body: some View {
+        if let habit = habits.first {
+            HabitDetailView(
+                habit: habit.snapshot,
+                completions: (habit.completions ?? []).compactMap(\.snapshot),
+                resolveRecord: { habits.first }
+            )
+            .onAppear {
+                if archived { habit.archivedAt = .now }
+            }
+        } else {
+            ContentUnavailableView(
+                "Seed habit not found",
+                systemImage: "questionmark.diamond"
+            )
+        }
+    }
+}
+
+#Preview("Daily — populated") {
+    NavigationStack {
+        HabitDetailPreviewWrapper(habitName: "Morning meditation")
+    }
+    .modelContainer(PreviewContainer.shared)
+}
+
+#Preview("Specific days (Gym)") {
+    NavigationStack {
+        HabitDetailPreviewWrapper(habitName: "Gym")
+    }
+    .modelContainer(PreviewContainer.shared)
+}
+
+#Preview("Counter (Drink water)") {
+    NavigationStack {
+        HabitDetailPreviewWrapper(habitName: "Drink water")
+    }
+    .modelContainer(PreviewContainer.shared)
+}
+
+#Preview("Archived") {
+    NavigationStack {
+        HabitDetailPreviewWrapper(habitName: "Morning meditation", archived: true)
+    }
+    .modelContainer(PreviewContainer.shared)
+}
+
+#Preview("Dark") {
+    NavigationStack {
+        HabitDetailPreviewWrapper(habitName: "Drink water")
+    }
+    .modelContainer(PreviewContainer.shared)
+    .preferredColorScheme(.dark)
+}

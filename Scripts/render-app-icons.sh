@@ -1,6 +1,6 @@
 #!/bin/bash
 # Renders the alternate app icons from their SVG masters in
-# branding/app-icons/ into Kado/Resources/Assets.xcassets:
+# branding/app-icons/ into Tendelm/Resources/Assets.xcassets:
 #
 #   AppIcon<Name>.appiconset   Light, Dark and Tinted 1024 masters
 #   AppIconPreviews/…imageset  60pt @3x Light / Dark, for the picker
@@ -15,7 +15,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 SRC=branding/app-icons
-ASSETS=Kado/Resources/Assets.xcassets
+ASSETS=Tendelm/Resources/Assets.xcassets
 PREVIEWS=$ASSETS/AppIconPreviews
 ALTERNATES=(Ura Sakura Momiji Yuyake Umi Hotaru Fuji)
 
@@ -113,11 +113,11 @@ group_json > "$PREVIEWS/Contents.json"
 # The default icon: shared Tinted master, plus its picker preview.
 render "$SRC/AppIcon-Tinted.svg" 1024 "$ASSETS/AppIcon.appiconset/AppIcon-Tinted.png"
 appiconset_json AppIcon > "$ASSETS/AppIcon.appiconset/Contents.json"
-set_dir="$PREVIEWS/AppIconPreviewKado.imageset"
+set_dir="$PREVIEWS/AppIconPreviewTendelm.imageset"
 mkdir -p "$set_dir"
-render "$SRC/AppIconKado.svg" 180 "$set_dir/AppIconPreviewKado.png"
-render "$SRC/AppIconKado-Dark.svg" 180 "$set_dir/AppIconPreviewKado-Dark.png"
-imageset_json AppIconPreviewKado > "$set_dir/Contents.json"
+render "$SRC/AppIconTendelm.svg" 180 "$set_dir/AppIconPreviewTendelm.png"
+render "$SRC/AppIconTendelm-Dark.svg" 180 "$set_dir/AppIconPreviewTendelm-Dark.png"
+imageset_json AppIconPreviewTendelm > "$set_dir/Contents.json"
 
 for name in "${ALTERNATES[@]}"; do
     base="AppIcon$name"

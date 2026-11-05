@@ -27,7 +27,7 @@ DerivedData/
 .build/
 .swiftpm/
 Packages/*
-!Packages/KadoCore/
+!Packages/TendelmCore/
 Package.pins
 Package.resolved
 *.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/

@@ -1,0 +1,186 @@
+import Foundation
+import SwiftData
+
+/// Version 5 of Tendelm's persistent schema. Adds a `sortOrder` field to
+/// `HabitRecord` so users can drag-to-reorder habits in the Today view.
+/// Migrated from V3 via a lightweight stage (new field has a default of 0).
+public enum TendelmSchemaV5: VersionedSchema {
+    public static let versionIdentifier = Schema.Version(5, 0, 0)
+
+    public static var models: [any PersistentModel.Type] {
+        [HabitRecord.self, CompletionRecord.self, TimeSinceRecord.self, TimeSinceResetRecord.self]
+    }
+}
+
+public extension TendelmSchemaV5 {
+    @Model
+    public final class HabitRecord {
+        public var id: UUID = UUID()
+        public var name: String = ""
+        private var frequencyData: Data = Data()
+        private var typeData: Data = Data()
+        public var createdAt: Date = Date()
+        public var archivedAt: Date?
+        private var colorRaw: String = "blue"
+        public var icon: String = "circle"
+        public var remindersEnabled: Bool = false
+        public var reminderHour: Int = 9
+        public var reminderMinute: Int = 0
+        public var sortOrder: Int = 0
+
+        @Relationship(deleteRule: .cascade, inverse: \CompletionRecord.habit)
+        public var completions: [CompletionRecord]? = []
+
+        public init(
+            id: UUID = UUID(),
+            name: String = "",
+            frequency: Frequency = .daily,
+            type: HabitType = .binary,
+            createdAt: Date = .now,
+            archivedAt: Date? = nil,
+            color: HabitColor = HabitColor.blue,
+            icon: String = HabitIcon.default,
+            remindersEnabled: Bool = false,
+            reminderHour: Int = 9,
+            reminderMinute: Int = 0,
+            sortOrder: Int = 0,
+            completions: [CompletionRecord]? = []
+        ) {
+            self.id = id
+            self.name = name
+            self.frequencyData = Self.encode(frequency)
+            self.typeData = Self.encode(type)
+            self.createdAt = createdAt
+            self.archivedAt = archivedAt
+            self.colorRaw = color.rawValue
+            self.icon = icon
+            self.remindersEnabled = remindersEnabled
+            self.reminderHour = reminderHour
+            self.reminderMinute = reminderMinute
+            self.sortOrder = sortOrder
+            self.completions = completions
+        }
+
+        public var frequency: Frequency {
+            get { Self.decode(frequencyData, fallback: .daily) }
+            set { frequencyData = Self.encode(newValue) }
+        }
+
+        public var type: HabitType {
+            get { Self.decode(typeData, fallback: .binary) }
+            set { typeData = Self.encode(newValue) }
+        }
+
+        public var color: HabitColor {
+            get { HabitColor(rawValue: colorRaw) ?? .blue }
+            set { colorRaw = newValue.rawValue }
+        }
+
+        public var snapshot: Habit {
+            Habit(
+                id: id,
+                name: name,
+                frequency: frequency,
+                type: type,
+                createdAt: createdAt,
+                archivedAt: archivedAt,
+                color: color,
+                icon: icon,
+                remindersEnabled: remindersEnabled,
+                reminderHour: reminderHour,
+                reminderMinute: reminderMinute,
+                sortOrder: sortOrder
+            )
+        }
+
+        private static func encode<T: Encodable>(_ value: T) -> Data {
+            try! JSONEncoder().encode(value)
+        }
+
+        private static func decode<T: Decodable>(_ data: Data, fallback: T) -> T {
+            (try? JSONDecoder().decode(T.self, from: data)) ?? fallback
+        }
+    }
+
+    @Model
+    public final class CompletionRecord {
+        public var id: UUID = UUID()
+        public var date: Date = Date()
+        public var value: Double = 1.0
+        public var note: String?
+        public var habit: HabitRecord?
+
+        public init(
+            id: UUID = UUID(),
+            date: Date = .now,
+            value: Double = 1.0,
+            note: String? = nil,
+            habit: HabitRecord? = nil
+        ) {
+            self.id = id
+            self.date = date
+            self.value = value
+            self.note = note
+            self.habit = habit
+        }
+
+        /// Projects to a value-type `Completion`, or `nil` when the
+        /// `habit` inverse isn't set. The relationship is optional
+        /// because CloudKit forbids required ones — and during a
+        /// CloudKit import the inverse is transiently nil while records
+        /// arrive out of order, so callers must tolerate that rather
+        /// than force-unwrap (issue #54). Map with `compactMap(\.snapshot)`.
+        public var snapshot: Completion? {
+            guard let habitID = habit?.id else { return nil }
+            return Completion(
+                id: id,
+                habitID: habitID,
+                date: date,
+                value: value,
+                note: note
+            )
+        }
+    }
+}
+
+public typealias HabitRecord = TendelmSchemaV5.HabitRecord
+public typealias CompletionRecord = TendelmSchemaV5.CompletionRecord
+
+public extension TendelmSchemaV5 {
+    @Model
+    final class TimeSinceRecord {
+        public var id: UUID = UUID()
+        public var name: String = ""
+        public var startedAt: Date = Date()
+        private var colorRaw: String = "green"
+        @Relationship(deleteRule: .cascade, inverse: \TimeSinceResetRecord.tracker)
+        public var resets: [TimeSinceResetRecord]? = []
+        public init(id: UUID = UUID(), name: String = "", startedAt: Date = .now, color: HabitColor = .green) {
+            self.id = id
+            self.name = name
+            self.startedAt = startedAt
+            self.colorRaw = color.rawValue
+        }
+        public var color: HabitColor {
+            get { HabitColor(rawValue: colorRaw) ?? .green }
+            set { colorRaw = newValue.rawValue }
+        }
+        public var snapshot: TimeSinceTracker {
+            TimeSinceTracker(id: id, name: name, startedAt: startedAt, color: color,
+                resets: (resets ?? []).map { TimeSinceReset(id: $0.id, date: $0.date) })
+        }
+    }
+    @Model
+    final class TimeSinceResetRecord {
+        public var id: UUID = UUID()
+        public var date: Date = Date()
+        public var tracker: TimeSinceRecord?
+        public init(id: UUID = UUID(), date: Date = .now, tracker: TimeSinceRecord? = nil) {
+            self.id = id
+            self.date = date
+            self.tracker = tracker
+        }
+    }
+}
+public typealias TimeSinceRecord = TendelmSchemaV5.TimeSinceRecord
+public typealias TimeSinceResetRecord = TendelmSchemaV5.TimeSinceResetRecord

@@ -24,21 +24,21 @@ jobs:
           DEVICE_ID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(v["udid"] for a in d["devices"].values() for v in a if "iPhone" in v["name"]))')
           echo "$DEVICE_ID" > output/simulator-id.txt
           set -o pipefail
-          xcodebuild test -project Kado.xcodeproj -scheme Kado -destination "platform=iOS Simulator,id=$DEVICE_ID" -derivedDataPath build -resultBundlePath output/UnitTests.xcresult -only-testing:KadoTests CODE_SIGNING_ALLOWED=NO > output/unit-tests.log 2>&1 || { tail -100 output/unit-tests.log; exit 1; }
+          xcodebuild test -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=iOS Simulator,id=$DEVICE_ID" -derivedDataPath build -resultBundlePath output/UnitTests.xcresult -only-testing:TendelmTests CODE_SIGNING_ALLOWED=NO > output/unit-tests.log 2>&1 || { tail -100 output/unit-tests.log; exit 1; }
           tail -30 output/unit-tests.log
       - name: Device build and IPA
         run: |
           set -o pipefail
-          xcodebuild build -project Kado.xcodeproj -scheme Kado -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath device-build CODE_SIGNING_ALLOWED=NO > output/device-build.log 2>&1 || { tail -100 output/device-build.log; exit 1; }
+          xcodebuild build -project Tendelm.xcodeproj -scheme Tendelm -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath device-build CODE_SIGNING_ALLOWED=NO > output/device-build.log 2>&1 || { tail -100 output/device-build.log; exit 1; }
           mkdir -p output/Payload
-          cp -R device-build/Build/Products/Release-iphoneos/Kado.app output/Payload/
+          cp -R device-build/Build/Products/Release-iphoneos/Tendelm.app output/Payload/
           cd output
-          zip -qr Kado-Personal.ipa Payload
-          shasum -a 256 Kado-Personal.ipa > Kado-Personal.ipa.sha256
+          zip -qr Tendelm-Personal.ipa Payload
+          shasum -a 256 Tendelm-Personal.ipa > Tendelm-Personal.ipa.sha256
           rm -rf Payload
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Kado-Personal
+          name: Tendelm-Personal
           path: output/
           retention-days: 14

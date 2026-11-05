@@ -1,6 +1,6 @@
 #!/usr/bin/env swift
 //
-// Wraps the raw App Store captures in the listing's own artwork: Kadō's paper ground, a
+// Wraps the raw App Store captures in the listing's own artwork: Tendelm's paper ground, a
 // Fraunces headline, and a device the screenshot sits inside.
 //
 //   swift Scripts/frame-screenshots.swift <captures> <destination> <captions.json>
@@ -32,7 +32,7 @@ import Foundation
 
 // MARK: - Palette
 //
-// The app's own tokens, read off `KadoCore/Design/Theme.swift` rather than invented. Kadō is a
+// The app's own tokens, read off `TendelmCore/Design/Theme.swift` rather than invented. Tendelm is a
 // paper-and-sage app, not a saturated-gradient one: a listing drawn in somebody else's idiom
 // stops looking like the product the moment the screenshot inside the frame loads.
 
@@ -72,11 +72,11 @@ struct Palette {
 // MARK: - Typography
 //
 // Fraunces is what the app draws its large titles in, and it is already in the repo as the
-// variable TTF `KadoCore` registers at launch. Registering the same file here is what keeps the
+// variable TTF `TendelmCore` registers at launch. Registering the same file here is what keeps the
 // listing and the product in one voice. If it can't be registered the frames still draw, in the
 // system serif, with a warning — a missing font is worth a note, not a stopped run.
 
-let frauncesPath = "Packages/KadoCore/Sources/KadoCore/Resources/Fonts/"
+let frauncesPath = "Packages/TendelmCore/Sources/TendelmCore/Resources/Fonts/"
     + "Fraunces[SOFT,WONK,opsz,wght].ttf"
 
 @discardableResult
@@ -600,7 +600,7 @@ struct CreativeLayout {
 // a port, not an approximation — the colours are mixed the way `MatrixCell` mixes them, in
 // Oklab, so a cell here is the colour the same cell is on the phone.
 
-/// The Oklab ↔ sRGB pair from `KadoCore/Design/OKLCH.swift`.
+/// The Oklab ↔ sRGB pair from `TendelmCore/Design/OKLCH.swift`.
 enum Oklab {
     static func linear(_ c: Double) -> Double {
         c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4)

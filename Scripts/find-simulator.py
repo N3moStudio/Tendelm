@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Print the UDID of the simulator with this exact name.
 
-    xcrun simctl list devices -j | find-simulator.py "Kado Shots main iphone-6.9"
+    xcrun simctl list devices -j | find-simulator.py "Tendelm Shots main iphone-6.9"
 
 The UDID rather than the name, because the name is not a stable address: a clone left behind by
 a parallel test run is called "Clone 1 of <name>", and a device is reachable by its own name

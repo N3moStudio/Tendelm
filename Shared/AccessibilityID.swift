@@ -14,7 +14,7 @@ import Foundation
 /// is no `screen` entry here: to assert a screen is showing, look for
 /// something only that screen has.
 ///
-/// **Kadō ships French**, which makes these load-bearing rather than
+/// **Tendelm ships French**, which makes these load-bearing rather than
 /// merely convenient. A suite that matched on
 /// `app.staticTexts["Dev mode"]` would pass on an English simulator and
 /// fail on a French one. Identifiers are locale-independent; labels are
@@ -40,7 +40,8 @@ enum AccessibilityID {
     enum Tab: Int {
         case today = 0
         case overview = 1
-        case settings = 2
+        case timeSince = 2
+        case settings = 3
 
         /// The SF Symbol each tab carries, which is how the suite
         /// reaches it on iPad.
@@ -59,6 +60,7 @@ enum AccessibilityID {
             switch self {
             case .today: "list.bullet.clipboard"
             case .overview: "square.grid.2x2"
+            case .timeSince: "leaf"
             case .settings: "gearshape"
             }
         }
@@ -251,7 +253,7 @@ enum AccessibilityID {
         static let dayStartPicker = "settings.dayStart.picker"
         /// One row of the Habit colours picker, per theme: "Classic"
         /// on one simulator, "Classique" on the other. Takes the
-        /// theme's raw value: the UI suite doesn't link `KadoCore`.
+        /// theme's raw value: the UI suite doesn't link `TendelmCore`.
         static func habitThemeRow(_ themeRawValue: String) -> String {
             "settings.habitTheme.\(themeRawValue)"
         }

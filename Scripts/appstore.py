@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Push Kadō's listing — copy, screenshots and creative — to App Store Connect.
+"""Push Tendelm's listing — copy, screenshots and creative — to App Store Connect.
 
     Scripts/appstore.py check                  # lengths and files, no network
     Scripts/appstore.py info                   # what the API currently holds
@@ -711,7 +711,7 @@ def reference_data(client: Client) -> dict:
 def library_spec(reference: dict, placement_type: str, size: tuple[int, int]) -> tuple[str, str]:
     """The spec an image of `size` meets for `placement_type`, and the group it is placed in.
 
-    Matched on the placement and the pixel size alone, which is enough for everything Kadō
+    Matched on the placement and the pixel size alone, which is enough for everything Tendelm
     publishes: each screenshot canvas belongs to exactly one device family's spec, the universal
     creative is one exact size, and the search-only 3:2 is a range no 16:9 falls into. What
     Apple's processing then files the upload under is checked against this.

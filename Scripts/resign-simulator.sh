@@ -2,8 +2,8 @@
 #
 # Re-signs a simulator build so the app and its widget extension carry a team identifier.
 #
-#   Scripts/resign-simulator.sh build/Build/Products/Debug-iphonesimulator/Kado.app
-#   Scripts/resign-simulator.sh path/to/Kado.app "Apple Development: Jane Doe (ABCDE12345)"
+#   Scripts/resign-simulator.sh build/Build/Products/Debug-iphonesimulator/Tendelm.app
+#   Scripts/resign-simulator.sh path/to/Tendelm.app "Apple Development: Jane Doe (ABCDE12345)"
 #
 # Why: Xcode signs simulator builds ad hoc — `codesign -dvv` says `Signature=adhoc`,
 # `TeamIdentifier=not set` — and refuses to do otherwise (`AD_HOC_CODE_SIGNING_ALLOWED=NO` fails
@@ -23,7 +23,7 @@
 # only AppIntents fidelity on iOS 26.x simulators is lost.
 set -euo pipefail
 
-app="${1:?usage: $0 <path/to/Kado.app> [identity]}"
+app="${1:?usage: $0 <path/to/Tendelm.app> [identity]}"
 identity="${2:-${SIGN_IDENTITY:-}}"
 
 if [[ -z "$identity" ]]; then

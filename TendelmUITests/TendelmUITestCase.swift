@@ -1,0 +1,459 @@
+import XCTest
+
+/// Shared setup for the UI suites.
+///
+/// Every test declares the state it starts from through `launchApp`,
+/// so none inherits what a previous one left behind. The app never
+/// reads the developer's real store: `-uiTestRun` redirects both the
+/// production and dev stores to throwaway files and drops CloudKit
+/// (see `UITestSupport`).
+class TendelmUITestCase: XCTestCase {
+
+    override func setUp() {
+        super.setUp()
+        continueAfterFailure = false
+    }
+
+    /// - Parameters:
+    ///   - devMode: start with the demo sandbox mounted instead of the
+    ///     real store. Goes through `UITestSupport` rather than through
+    ///     a `-kado.devMode` launch argument: the argument domain
+    ///     outranks every stored value, which would pin the flag on and
+    ///     leave the toggle unable to move — see `UITestSupport`.
+    ///   - hasConfirmedDevMode: start past the first-activation
+    ///     confirmation alert. Pass `false` only when the alert itself
+    ///     is what's under test — otherwise `DevModeSection`'s
+    ///     `onChange` interception reverts the flip and the test taps a
+    ///     toggle that doesn't move.
+    ///   - seedProduction: fill the (redirected) production store with
+    ///     the demo dataset, so toggling dev mode *off* lands on a
+    ///     populated list rather than the empty state.
+    ///   - resetState: wipe both throwaway stores first.
+    ///   - language: which language to run the app in. Pinned rather
+    ///     than inherited so a run is the same on a French simulator as
+    ///     on an English one — and so the suite is worth something as
+    ///     evidence either way, since the assertions go through
+    ///     identifiers rather than labels.
+    ///   - locale: the region to format dates and numbers with,
+    ///     defaulting to `language`. Only the screenshot run needs a
+    ///     region of its own — a French listing with US dates in it is
+    ///     the kind of thing nobody notices until it has shipped.
+    ///   - seedForScreenshots: fill the store with `ScreenshotSeed`'s
+    ///     authored dataset rather than `DevModeSeed`'s every-state
+    ///     one. Only the screenshot run wants this.
+    ///   - suppressNameAutoFocus: leave the New Habit sheet's name
+    ///     field unfocused, so the keyboard stays out of a screenshot.
+    ///   - supporter: own the Supporter pack for the run — a mock
+    ///     stands in for StoreKit, which a test can't buy from.
+    ///   - habitTheme: start in this habit colour theme (its raw value).
+    ///     A paid one only renders with `supporter` too.
+    ///   - appearanceAnnouncement: leave Today's Appearance
+    ///     announcement due. Every other run starts with it put away.
+    ///   - tipNudgeReady: start old enough for the tip nudge to be due.
+    ///   - archiveFirstHabit: start with the first seeded habit already
+    ///     archived, for tests of the Archived list that don't need to
+    ///     drive Today's long-press menu to get one there — see
+    ///     `UITestSupport.Argument.archiveFirstHabit` for what that
+    ///     costs.
+    @MainActor
+    func launchApp(
+        devMode: Bool = false,
+        hasConfirmedDevMode: Bool = true,
+        seedProduction: Bool = false,
+        resetState: Bool = true,
+        language: String = "en",
+        locale: String? = nil,
+        seedForScreenshots: Bool = false,
+        suppressNameAutoFocus: Bool = false,
+        widgetGallery: Bool = false,
+        archiveFirstHabit: Bool = false,
+        supporter: Bool = false,
+        habitTheme: String? = nil,
+        appearanceAnnouncement: Bool = false,
+        tipNudgeReady: Bool = false,
+        iCloudAvailable: Bool = false
+    ) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestRun"]
+
+        if resetState {
+            app.launchArguments.append("-uiTestResetState")
+        }
+        if seedProduction {
+            app.launchArguments.append("-uiTestSeedProduction")
+        }
+        if seedForScreenshots {
+            app.launchArguments.append("-uiTestSeedForScreenshots")
+        }
+        if suppressNameAutoFocus {
+            app.launchArguments.append("-uiTestSuppressNameAutoFocus")
+        }
+        if widgetGallery {
+            app.launchArguments.append("-uiTestWidgetGallery")
+        }
+        if archiveFirstHabit {
+            app.launchArguments.append("-uiTestArchiveFirstHabit")
+        }
+        if supporter {
+            app.launchArguments.append("-uiTestSupporter")
+        }
+        if appearanceAnnouncement {
+            app.launchArguments.append("-uiTestAppearanceAnnouncement")
+        }
+        if tipNudgeReady {
+            app.launchArguments.append("-uiTestTipNudgeReady")
+        }
+        if iCloudAvailable {
+            app.launchArguments.append("-uiTestICloudAvailable")
+        }
+        if let habitTheme {
+            app.launchArguments += ["-uiTestHabitTheme", habitTheme]
+        }
+        app.launchArguments += [
+            "-uiTestDevMode", devMode ? "1" : "0",
+            "-uiTestDevModeConfirmed", hasConfirmedDevMode ? "1" : "0",
+            "-AppleLanguages", "(\(language))",
+            // The *region*, not just the language, when one is given:
+            // it is what decides how dates and numbers are written
+            // inside the screenshots.
+            "-AppleLocale", locale ?? language,
+        ]
+
+        app.launch()
+        return app
+    }
+
+    /// Pops the navigation stack one level.
+    ///
+    /// By UIKit's own `BackButton` identifier rather than as the
+    /// navigation bar's first button: on the iPhone Duo's outer display
+    /// iOS 27.1 moves Back and the overflow menu out of the bar into the
+    /// system column on the right edge, and the bar's first button is
+    /// then the screen's own trailing item — Habit Detail's Edit, which
+    /// opened the editor over the tab rail and stalled the screenshot
+    /// run. The first-button fallback covers a bar that names its back
+    /// button differently.
+    @MainActor
+    func goBack(in app: XCUIApplication) {
+        let back = app.buttons["BackButton"].firstMatch
+        if back.waitForExistence(timeout: 2) {
+            back.tap()
+        } else {
+            app.navigationBars.buttons.firstMatch.tap()
+        }
+    }
+
+    /// Switches tabs.
+    ///
+    /// By position on iPhone, because SwiftUI's `Tab` gives no seam for
+    /// an accessibility identifier — see `AccessibilityID.Tab`. Going
+    /// through the tab bar rather than `app.buttons[…]` also keeps this
+    /// from matching a same-named button inside the tab's content.
+    ///
+    /// **iPad has no tab bar at all**, so position is not an address
+    /// there: `app.tabBars` is empty and the tabs are drawn as plain
+    /// buttons across the top. The fallback below reaches them by SF
+    /// Symbol name, which is the only property of a tab that is neither
+    /// localized nor device-dependent.
+    @MainActor
+    func tapTab(
+        _ tab: AccessibilityID.Tab,
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        // iPhone: a real tab bar at the bottom, addressed by position.
+        // Short wait, because it is there the moment the app is.
+        let bar = app.tabBars.firstMatch
+        if bar.waitForExistence(timeout: 5) {
+            bar.buttons.element(boundBy: tab.rawValue).tap()
+            return
+        }
+
+        // iPad: no tab bar element exists at all. The tabs are plain
+        // buttons across the top, each carrying its SF Symbol name as
+        // its identifier — see `AccessibilityID.Tab.symbolName`.
+        let button = app.buttons[tab.symbolName].firstMatch
+        guard button.waitForExistence(timeout: 30) else {
+            // The hierarchy, not just the miss. A tab that cannot be
+            // found is nearly always a tab bar that lives somewhere
+            // else on this device, and the only way to know where is to
+            // look. This attachment is how the iPad layout above was
+            // established in the first place.
+            let dump = XCTAttachment(string: app.debugDescription)
+            dump.name = "hierarchy-no-tab-bar"
+            dump.lifetime = .keepAlways
+            add(dump)
+            XCTFail(
+                "Found neither a tab bar nor a “\(tab.symbolName)” tab button.",
+                file: file, line: line
+            )
+            return
+        }
+        button.tap()
+    }
+
+    /// Scrolls until `element` exists and can be tapped.
+    ///
+    /// `waitForExistence` alone is not enough for anything below the
+    /// fold of a `Form`: an unrealized row is not in the hierarchy at
+    /// all, so the wait watches for something that cannot appear until
+    /// something scrolls. This is the whole reason the Dev mode toggle —
+    /// the last section in Settings — looked missing for a full 30s
+    /// timeout on the first run of this suite.
+    ///
+    /// Slow swipes on purpose: a thrown scroll coasts, and XCUITest
+    /// answers `isHittable` only once the app looks idle, so every query
+    /// during the glide burns its whole quiescence budget and then
+    /// answers about a row that has already moved.
+    @MainActor
+    func scrollTo(
+        _ element: XCUIElement,
+        in app: XCUIApplication,
+        swipes: Int = 10,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        for _ in 0..<swipes {
+            if element.exists && element.isHittable { return }
+            app.swipeUp(velocity: .slow)
+        }
+        XCTAssertTrue(
+            element.exists && element.isHittable,
+            "Never scrolled \(element) into view.",
+            file: file, line: line
+        )
+    }
+
+    /// Scrolls until `element` sits wholly above the floating tab bar.
+    ///
+    /// `scrollTo` stops as soon as the element's *centre* can be tapped,
+    /// which leaves a row at the bottom of the screen with its lower
+    /// half under the bar. That is enough for a tap, but not for a
+    /// long-press: the menu opens, and then the tap on its item is
+    /// dropped — reproduced on the first run of `CompletionHistoryTests`,
+    /// with the tap landing dead centre on Delete and the menu staying
+    /// up. One swipe further and the same tap goes through. iPad has no
+    /// bar at the bottom, so there is nothing to clear there.
+    @MainActor
+    func scrollClearOfTabBar(
+        _ element: XCUIElement,
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let bar = app.tabBars.firstMatch
+        guard bar.exists else { return }
+        var swipes = 0
+        while element.frame.maxY > bar.frame.minY && swipes < 3 {
+            app.swipeUp(velocity: .slow)
+            swipes += 1
+        }
+        XCTAssertTrue(
+            element.exists && element.frame.maxY <= bar.frame.minY,
+            "Never scrolled \(element) clear of the tab bar.",
+            file: file, line: line
+        )
+    }
+
+    /// The elements on screen whose identifier starts with `prefix`.
+    ///
+    /// For the identifier families keyed by a `UUID` the seed draws
+    /// fresh each run — a test can't know the id ahead of time, so it
+    /// asks for "any of them" and reads the id back off the element.
+    @MainActor
+    func elements(withIdentifierPrefix prefix: String, in app: XCUIApplication) -> XCUIElementQuery {
+        app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier BEGINSWITH %@", prefix))
+    }
+
+    /// The Today rows currently on screen, addressed by the identifier
+    /// prefix rather than by habit name.
+    ///
+    /// Names come from `DevModeSeed`, which translates them — so a test
+    /// that looked for "Morning meditation" would pass in English and
+    /// fail in French. The prefix says "a Today row, any of them",
+    /// which is what these tests actually mean.
+    @MainActor
+    func todayRows(in app: XCUIApplication) -> XCUIElementQuery {
+        elements(withIdentifierPrefix: "today.row.", in: app)
+    }
+
+    /// Waits for the Today list to have rows in it.
+    @MainActor
+    func waitForTodayRows(
+        in app: XCUIApplication,
+        timeout: TimeInterval = 30,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertTrue(
+            todayRows(in: app).firstMatch.waitForExistence(timeout: timeout),
+            "The Today list never showed a row.",
+            file: file,
+            line: line
+        )
+    }
+
+    /// Pushes the detail of the seeded counter habit, and returns its id.
+    @MainActor
+    @discardableResult
+    func openCounterHabitDetail(
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> UUID? {
+        openHabitDetail(
+            showing: AccessibilityID.HabitDetail.quickLogIncrement, in: app, file: file, line: line
+        )
+    }
+
+    /// Pushes the detail of the seeded timer habit, and returns its id.
+    @MainActor
+    @discardableResult
+    func openTimerHabitDetail(
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> UUID? {
+        openHabitDetail(
+            showing: AccessibilityID.HabitDetail.logSessionButton, in: app, file: file, line: line
+        )
+    }
+
+    /// Pushes Today rows in turn until the detail shows the button with
+    /// `marker`, stays there, and returns the habit's id — read off the
+    /// row's identifier before the push, since that is the only place
+    /// the suite can learn it.
+    ///
+    /// Today rows are keyed by a `UUID` the seed draws fresh each run,
+    /// so a habit can't be addressed by identifier from the list. Each
+    /// row is pushed and asked what it is; the seed has one habit of
+    /// each type among a handful, so this is a few pushes at most. The
+    /// id is what lets a later screen address the same habit — the
+    /// Overview matrix keys its cells by it, and its row order is not
+    /// something a test can rely on.
+    @MainActor
+    @discardableResult
+    func openHabitDetail(
+        showing marker: String,
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> UUID? {
+        let rows = todayRows(in: app)
+        let scoreCard = app.buttons[AccessibilityID.HabitDetail.scoreCard]
+        let markerButton = app.buttons[marker]
+        for index in 0..<rows.count {
+            let row = rows.element(boundBy: index)
+            let habitID = UUID(uuidString: String(row.identifier.dropFirst("today.row.".count)))
+            row.tap()
+            XCTAssertTrue(
+                scoreCard.waitForExistence(timeout: 10),
+                "Tapping a Today row should push its detail.",
+                file: file, line: line
+            )
+            if markerButton.waitForExistence(timeout: 2) {
+                return habitID
+            }
+            leaveHabitDetail(in: app, file: file, line: line)
+        }
+        XCTFail("No Today row pushed a detail showing \(marker).", file: file, line: line)
+        return nil
+    }
+
+    /// Goes from a habit's detail back to the Today list.
+    ///
+    /// On a phone that is a pop. In a regular-width window — iPad, the
+    /// iPhone Duo's inner display — Today shows the detail *beside* the
+    /// list (issue #140): there is nothing to pop, the list is already
+    /// on screen, and the bar's first button is the detail's own Edit.
+    @MainActor
+    func leaveHabitDetail(
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        if todayRows(in: app).firstMatch.isHittable { return }
+        goBack(in: app)
+        XCTAssertTrue(
+            app.buttons[AccessibilityID.HabitDetail.scoreCard].waitForNonExistence(timeout: 10),
+            "Popping the detail should return to Today.",
+            file: file, line: line
+        )
+    }
+
+    // MARK: - Creating a habit
+
+    /// Creates a daily yes/no habit — the sheet's defaults — with the
+    /// given name from Today's `+`, and waits for the sheet to go away.
+    @MainActor
+    func createHabit(named name: String, in app: XCUIApplication) {
+        app.buttons[AccessibilityID.Today.newHabitButton].firstMatch.tap()
+        let field = app.textFields[AccessibilityID.NewHabit.nameField]
+        XCTAssertTrue(field.waitForExistence(timeout: 10), "The New Habit sheet never appeared.")
+        field.tap()
+        field.typeText(name)
+        let save = app.buttons[AccessibilityID.NewHabit.saveButton].firstMatch
+        XCTAssertTrue(save.waitForExistence(timeout: 5))
+        save.tap()
+        XCTAssertTrue(
+            field.waitForNonExistence(timeout: 10),
+            "The New Habit sheet should dismiss after Save."
+        )
+    }
+
+    // MARK: - The day-edit popover
+
+    /// Taps the day-edit popover's `+`, from whichever screen opened it.
+    ///
+    /// Re-queried on every call rather than held: if the popover were
+    /// ever re-presented under a tap, a held element would go stale.
+    @MainActor
+    func tapDayEditIncrement(
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let plus = app.buttons[AccessibilityID.DayEdit.increment].firstMatch
+        XCTAssertTrue(
+            plus.waitForExistence(timeout: 5), "The popover's + never appeared.", file: file, line: line
+        )
+        plus.tap()
+    }
+
+    /// The number a value text leads with — "3" out of "3 of 8", or the
+    /// whole of the quick-log's "3".
+    ///
+    /// Read off the label rather than a separate `accessibilityValue`:
+    /// giving the text one would have VoiceOver announce "3 of 8, 3".
+    /// The run pins English, so the number does lead.
+    @MainActor
+    func number(in element: XCUIElement) -> String {
+        String(element.label.prefix { $0.isNumber })
+    }
+
+    /// Whether a text came to lead with `number` within the timeout.
+    /// Re-read rather than compared once, because the read straight
+    /// after a tap races the update.
+    @MainActor
+    func waited(
+        for element: XCUIElement, toRead number: String, timeout: TimeInterval = 5
+    ) -> Bool {
+        let expectation = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "label MATCHES %@", "^\(number)(\\D.*)?$"),
+            object: element
+        )
+        return XCTWaiter().wait(for: [expectation], timeout: timeout) == .completed
+    }
+
+    /// Saves a screenshot into the result bundle, so a failing run can
+    /// be looked at without re-running it.
+    @MainActor
+    func capture(_ app: XCUIApplication, _ name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+}

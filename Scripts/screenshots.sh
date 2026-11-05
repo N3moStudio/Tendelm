@@ -7,7 +7,7 @@
 #   Scripts/screenshots.sh --devices iphone-6.9     # just the iPhone set
 #   Scripts/screenshots.sh --passes widgets         # only the widget tiles; keeps the rest
 #
-# It drives `KadoUITests/ScreenshotTests` — the only suite `make e2e` skips — once per language
+# It drives `TendelmUITests/ScreenshotTests` — the only suite `make e2e` skips — once per language
 # and per device, with `-testLanguage` so the app and its seeded data are both in that language.
 # The pictures come out of the result bundle and land in
 # docs/app-store/screenshots/<locale>/<device>/, numbered in the order App Store Connect should
@@ -44,12 +44,12 @@ CAPTIONS="docs/app-store/captions.json"
 # Whether to also refresh the marketing site's copies on the way out. `--no-site` clears it,
 # for a partial run whose captures shouldn't reach getkado.app yet.
 SITE="yes"
-PROJECT="Kado.xcodeproj"
-SCHEME="Kado"
+PROJECT="Tendelm.xcodeproj"
+SCHEME="Tendelm"
 DERIVED="build"
 # A name of its own, and one per worktree: `make e2e` in another worktree must not find itself
 # sharing a device with a run that is busy pinning its clock to 9:41.
-SIM_PREFIX="Kado Shots $(basename "$PWD")"
+SIM_PREFIX="Tendelm Shots $(basename "$PWD")"
 
 # Read a value out of config.json. One source of truth for the device canvases, shared with the
 # uploader, which needs the same table to know which screenshot set a folder belongs in.
@@ -210,14 +210,14 @@ for device in "${DEVICES[@]}"; do
       # Serial, not parallel: parallel testing clones the simulator, and a clone is not the
       # device the status bar and the appearance were pinned on.
       #
-      # Deliberately *not* CODE_SIGNING_ALLOWED=NO. Kadō's app target carries the iCloud and
+      # Deliberately *not* CODE_SIGNING_ALLOWED=NO. Tendelm's app target carries the iCloud and
       # App Group entitlements, and an unsigned build has neither, so `CKContainer(identifier:)`
-      # traps on the first line of `KadoApp.init()` and every capture "fails" at launch.
+      # traps on the first line of `TendelmApp.init()` and every capture "fails" at launch.
       xcodebuild test \
         -project "$PROJECT" -scheme "$SCHEME" \
         -destination "platform=iOS Simulator,id=$udid" \
         -derivedDataPath "$DERIVED" \
-        -only-testing:"KadoUITests/$test_case" \
+        -only-testing:"TendelmUITests/$test_case" \
         -testLanguage "$language" -testRegion "$region" \
         -parallel-testing-enabled NO \
         -resultBundlePath "$bundle" \
