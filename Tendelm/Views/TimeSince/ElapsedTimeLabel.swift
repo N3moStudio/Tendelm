@@ -3,12 +3,31 @@ import TendelmCore
 
 struct ElapsedTimeLabel: View {
     let start: Date
-    let now: Date
     var showsSeconds = false
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var visible = false
+    @State private var mountedAt = Date.now
 
     var body: some View {
+        Group {
+            if visible && scenePhase == .active {
+                let interval: TimeInterval = showsSeconds ? 1 : 60
+                // A stable past anchor also ticks before a future start.
+                let anchor = start.addingTimeInterval(-max(0, ceil(start.timeIntervalSince(mountedAt) / interval)) * interval)
+                TimelineView(.periodic(from: anchor, by: interval)) { context in
+                    clockLabel(at: context.date)
+                }
+            } else {
+                clockLabel(at: .now)
+            }
+        }
+        .onAppear { visible = true }
+        .onDisappear { visible = false }
+    }
+
+    private func clockLabel(at now: Date) -> some View {
         let status = TimeSinceStatus(start: start, now: now)
-        VStack(alignment: .leading, spacing: 6) {
+        return VStack(alignment: .leading, spacing: 6) {
             if status.isScheduled {
                 Text("Starts in")
                     .font(.subheadline).foregroundStyle(Color.kadoForegroundSecondary)

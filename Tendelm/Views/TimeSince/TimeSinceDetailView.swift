@@ -19,11 +19,11 @@ struct TimeSinceDetailView: View {
             if let value = tracker {
                 List {
                     Section {
-                        TimeSinceClock(start: value.currentStart, showsSeconds: true) { now in
+                        TimeSinceStartGate(start: value.currentStart) { now in
                             VStack(alignment: .leading, spacing: 16) {
                                 Text(value.name).font(.title2.weight(.semibold))
                                     .fixedSize(horizontal: false, vertical: true)
-                                ElapsedTimeLabel(start: value.currentStart, now: now, showsSeconds: true)
+                                ElapsedTimeLabel(start: value.currentStart, showsSeconds: true)
                                 Text(now < value.currentStart
                                     ? "Starts \(value.currentStart.formatted(date: .abbreviated, time: .shortened))"
                                     : "Since \(value.currentStart.formatted(date: .abbreviated, time: .shortened))")

@@ -9,9 +9,9 @@ final class PersonalEditionTests: TendelmUITestCase {
         let field = nameField(in: app)
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         field.typeText("Starting next month")
-        app.buttons["timeSince.startOptions"].tap()
+        app.buttons["Start date & color"].tap()
         let date = app.datePickers["timeSince.start"]
-        XCTAssertTrue(date.waitForExistence(timeout: 5))
+        XCTAssertTrue(date.waitForExistence(timeout: 5), app.debugDescription)
         date.buttons.firstMatch.tap()
         let next = app.buttons["Next Month"].firstMatch
         XCTAssertTrue(next.waitForExistence(timeout: 5), app.debugDescription)

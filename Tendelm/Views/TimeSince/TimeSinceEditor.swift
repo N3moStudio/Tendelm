@@ -30,7 +30,6 @@ struct TimeSinceEditor: View {
                             .accessibilityIdentifier("timeSince.start")
                         HabitColorPicker(selection: $color)
                     }
-                    .accessibilityIdentifier("timeSince.startOptions")
                 } footer: {
                     if tracker?.orderedResets.first != nil {
                         Text("The start must be before your first logged reset.")

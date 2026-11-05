@@ -55,7 +55,7 @@ struct TimeSinceView: View {
     }
 
     private func card(_ tracker: TimeSinceTracker) -> some View {
-        TimeSinceClock(start: tracker.currentStart) { now in
+        TimeSinceStartGate(start: tracker.currentStart) { now in
             VStack(alignment: .leading, spacing: 16) {
                 NavigationLink(value: tracker.id) {
                     VStack(alignment: .leading, spacing: 12) {
@@ -68,7 +68,7 @@ struct TimeSinceView: View {
                             Image(systemName: "chevron.right").font(.caption).foregroundStyle(Color.kadoForegroundSecondary)
                                 .accessibilityHidden(true)
                         }
-                        ElapsedTimeLabel(start: tracker.currentStart, now: now)
+                        ElapsedTimeLabel(start: tracker.currentStart)
                     }
                     .contentShape(Rectangle())
                 }
