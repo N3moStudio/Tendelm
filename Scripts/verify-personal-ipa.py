@@ -13,7 +13,7 @@ def inspect(path: Path) -> dict:
         assert archive.testzip() is None, "Corrupt ZIP entry"
         names = archive.namelist()
         root = "Payload/Tendelm.app/"
-        assert {n.split('/')[1] for n in names if n.startswith('Payload/')} == {"Tendelm.app"}
+        assert {n.split('/')[1] for n in names if n.startswith('Payload/') and n != 'Payload/'} == {"Tendelm.app"}
         info = plistlib.loads(archive.read(root + "Info.plist"))
         assert info["CFBundleIdentifier"] == "com.n3mostudio.tendelm"
         assert info["CFBundleDisplayName"] == "Tendelm"
@@ -50,8 +50,10 @@ def inspect(path: Path) -> dict:
             if bundle != root:
                 assert metadata["CFBundleIdentifier"] == "com.n3mostudio.tendelm.TendelmWidgets"
             binaries.append({"bundle_id": metadata["CFBundleIdentifier"], "architecture": "arm64", "platform": "iOS device", "encrypted": encrypted})
+        with path.open("rb") as source:
+            digest = hashlib.file_digest(source, "sha256").hexdigest()
         return {"file": str(path.resolve()), "bytes": path.stat().st_size,
-                "sha256": hashlib.file_digest(path.open("rb"), "sha256").hexdigest(),
+                "sha256": digest,
                 "version": info["CFBundleShortVersionString"], "build": info["CFBundleVersion"],
                 "minimum_os": info["MinimumOSVersion"], "binaries": binaries,
                 "provisioning": "No profile; personal signing required", "zip_integrity": "passed"}

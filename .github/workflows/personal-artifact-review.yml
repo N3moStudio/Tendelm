@@ -1,0 +1,47 @@
+name: Tendelm artifact review
+on:
+  workflow_dispatch:
+    inputs:
+      artifact_run:
+        description: Build run containing the device IPA
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  review:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Tendelm
+          path: prior-build
+          run-id: ${{ inputs.artifact_run }}
+          github-token: ${{ github.token }}
+      - name: Inspect the existing IPA
+        run: |
+          mkdir -p output
+          python3 Scripts/verify-personal-ipa.py prior-build/Tendelm-1.0.0.ipa > output/package-inspection.json
+          cd prior-build
+          shasum -a 256 -c Tendelm-1.0.0.ipa.sha256
+      - name: Select Xcode and simulator
+        run: |
+          DEVELOPER_APP=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$DEVELOPER_APP/Contents/Developer"
+          xcodebuild -version
+          xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(v["udid"] for a in d["devices"].values() for v in a if "iPhone" in v["name"]))' > output/simulator-id.txt
+      - name: Verify reset regression test
+        run: |
+          bash Scripts/check-reset-guard.sh
+          git diff --exit-code -- Packages/TendelmCore/Sources/TendelmCore/Models/TimeSinceTracker.swift
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Tendelm-review
+          path: |
+            output/*.json
+            output/*.log
+          retention-days: 14
