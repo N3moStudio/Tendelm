@@ -261,16 +261,9 @@ nonisolated public enum HabitTheme: String, CaseIterable, Codable, Sendable, Has
 
 // MARK: - Supporter pack
 
-/// Tendelm and Classic are free; every other theme needs the Supporter
-/// pack. Without it a paid pick renders as Tendelm — the stored choice is
-/// kept, so it comes back the moment the pack does.
+/// All locally included palettes are available in Tendelm, including widgets.
 extension HabitTheme: SupporterGated {
-    public var requiresSupporterPack: Bool {
-        switch self {
-        case .kado, .classic: false
-        case .muted, .vivid, .autumn, .monochromeSage: true
-        }
-    }
+    public var requiresSupporterPack: Bool { false }
 
     public static let freeFallback = HabitTheme.kado
 }

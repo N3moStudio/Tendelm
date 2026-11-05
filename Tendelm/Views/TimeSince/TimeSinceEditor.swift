@@ -22,12 +22,18 @@ struct TimeSinceEditor: View {
                         .onSubmit(save)
                         .accessibilityIdentifier("timeSince.name")
                 } footer: {
-                    Text("Give it a name. Your time starts now.")
+                    Text("Starts now, or choose a date and time below.")
                 }
                 Section {
                     DisclosureGroup("Start date & color") {
-                        DatePicker("Started", selection: $start, in: ...latestStart, displayedComponents: [.date, .hourAndMinute])
+                        DatePicker("Start", selection: $start, in: ...latestStart, displayedComponents: [.date, .hourAndMinute])
+                            .accessibilityIdentifier("timeSince.start")
                         HabitColorPicker(selection: $color)
+                    }
+                    .accessibilityIdentifier("timeSince.startOptions")
+                } footer: {
+                    if tracker?.orderedResets.first != nil {
+                        Text("The start must be before your first logged reset.")
                     }
                 }
             }
@@ -38,7 +44,7 @@ struct TimeSinceEditor: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(tracker == nil ? "Start" : "Save", action: save)
+                    Button(tracker == nil ? (start > .now ? "Schedule" : "Start") : "Save", action: save)
                         .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         .accessibilityIdentifier("timeSince.save")
                 }
@@ -55,13 +61,13 @@ struct TimeSinceEditor: View {
         }
     }
 
-    private var latestStart: Date { min(.now, tracker?.orderedResets.first?.date ?? .now) }
+    private var latestStart: Date { tracker?.orderedResets.first?.date ?? .distantFuture }
 
     private func save() {
         guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         var value = tracker ?? TimeSinceTracker(name: name)
         value.name = name
-        value.startedAt = min(start, latestStart)
+        value.startedAt = start
         value.color = color
         do {
             try TimeSinceStore().save(value, in: context)

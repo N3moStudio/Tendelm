@@ -53,17 +53,14 @@ struct HabitColorTests {
         #expect(HabitTheme.monochromeSage.rawValue == "monochromeSage")
     }
 
-    /// Tendelm and Classic are the free themes; everything else is the
-    /// Supporter pack's, and falls back to Tendelm without it.
-    @Test("Only Tendelm and Classic are free, and a locked theme renders as Tendelm")
+    @Test("Every Tendelm palette is available without a purchase")
     func themeGating() {
-        let free: Set<HabitTheme> = [.kado, .classic]
         #expect(HabitTheme.freeFallback == .kado)
         for theme in HabitTheme.allCases {
-            #expect(theme.requiresSupporterPack == !free.contains(theme), "\(theme)")
+            #expect(!theme.requiresSupporterPack, "\(theme)")
             #expect(HabitTheme.effective(preferred: theme, isSupporter: true) == theme)
             #expect(
-                HabitTheme.effective(preferred: theme, isSupporter: false) == (free.contains(theme) ? theme : .kado),
+                HabitTheme.effective(preferred: theme, isSupporter: false) == theme,
                 "\(theme)"
             )
         }

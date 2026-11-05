@@ -12,6 +12,21 @@ struct TimeSincePersistenceTests {
             configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)).usingExplicitTestSaves()
     }
 
+    @Test("A future start persists exactly and survives both backup formats")
+    func futureStartRoundTrip() throws {
+        let container = try memoryStore()
+        let future = Date(timeIntervalSince1970: (Date.now.timeIntervalSince1970 + 172_800).rounded())
+        let tracker = TimeSinceTracker(name: "Starts later", startedAt: future)
+        try TimeSinceStore().save(tracker, in: container.mainContext)
+        let fresh = ModelContext(container)
+        #expect(try fresh.fetch(FetchDescriptor<TimeSinceRecord>()).first?.snapshot == tracker)
+        let document = BackupDocument(exportedAt: start, appVersion: "test", habits: [], timeSinceTrackers: [tracker])
+        let json = try DefaultBackupExporter().encode(document)
+        #expect(try DefaultBackupImporter().parse(data: json).timeSinceTrackers == [tracker])
+        let csv = try CSVBackupCoder().encode(document)
+        #expect(try CSVBackupCoder().decode(csv).timeSinceTrackers == [tracker])
+    }
+
     @Test("Reset, undo and deletion persist without changing another tracker")
     func saveUndoAndDelete() throws {
         let container = try memoryStore()

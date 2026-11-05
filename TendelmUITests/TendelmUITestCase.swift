@@ -73,10 +73,12 @@ class TendelmUITestCase: XCTestCase {
         tipNudgeReady: Bool = false,
         iCloudAvailable: Bool = false,
         seedTimeSince: Bool = false,
-        contentSize: String? = nil
+        contentSize: String? = nil,
+        scheduledStartOffset: TimeInterval? = nil
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestRun"]
+        if let scheduledStartOffset { app.launchArguments += ["-uiTestScheduledStartOffset", String(scheduledStartOffset)] }
         if seedTimeSince { app.launchArguments.append("-uiTestSeedTimeSince") }
         if let contentSize { app.launchArguments += ["-UIPreferredContentSizeCategoryName", contentSize] }
 

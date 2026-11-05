@@ -57,6 +57,18 @@ public enum TimeSinceError: Error, Equatable, Sendable {
     case invalidTracker
 }
 
+/// A future start counts down; at its exact timestamp it becomes elapsed time.
+/// This is derived from dates, so reopening the app requires no background work.
+public struct TimeSinceStatus: Equatable, Sendable {
+    public let isScheduled: Bool
+    public let duration: ElapsedDuration
+
+    public init(start: Date, now: Date) {
+        isScheduled = now < start
+        duration = isScheduled ? ElapsedDuration(from: now, to: start) : ElapsedDuration(from: start, to: now)
+    }
+}
+
 /// A duration day is 24 elapsed hours, not a local calendar day. No running
 /// background timer is needed: recompute from the saved absolute timestamp.
 public struct ElapsedDuration: Equatable, Sendable {

@@ -69,6 +69,44 @@ final class HabitThemePickerTests: TendelmUITestCase {
         return UIImage(cgImage: badge).pngData()
     }
 
+    @MainActor
+    func testAppearanceAndPaletteSurviveRelaunch() {
+        var app = launchApp(seedProduction: true, seedForScreenshots: true)
+        openAppearance(in: app)
+        let display = app.segmentedControls["appearance.display"]
+        XCTAssertTrue(display.waitForExistence(timeout: 5))
+        display.buttons["Light"].tap()
+        let light = pagePixel(in: app)
+        display.buttons["Dark"].tap()
+        let dark = pagePixel(in: app)
+        XCTAssertNotEqual(light, dark, "The page itself must change when Display changes.")
+        let autumn = themeRow("autumn", in: app)
+        scrollTo(autumn, in: app)
+        autumn.tap()
+        XCTAssertTrue(autumn.isSelected)
+        capture(app, "appearance-dark-autumn")
+        app.terminate()
+        app = launchApp(resetState: false)
+        openAppearance(in: app)
+        XCTAssertTrue(app.segmentedControls["appearance.display"].buttons["Dark"].isSelected)
+        XCTAssertTrue(themeRow("autumn", in: app).isSelected)
+        XCTAssertEqual(dark, pagePixel(in: app))
+        app.segmentedControls["appearance.display"].buttons["Light"].tap()
+        capture(app, "appearance-light-autumn")
+        app.segmentedControls["appearance.display"].buttons["System"].tap()
+        XCTAssertTrue(app.segmentedControls["appearance.display"].buttons["System"].isSelected)
+    }
+
+    @MainActor
+    private func pagePixel(in app: XCUIApplication) -> Data? {
+        RunLoop.current.run(until: Date().addingTimeInterval(0.6))
+        let image = app.screenshot().image
+        guard let cg = image.cgImage,
+              let pixel = cg.cropping(to: CGRect(x: image.scale * 4, y: CGFloat(cg.height) / 2, width: 1, height: 1))
+        else { return nil }
+        return pixel.dataProvider?.data as Data?
+    }
+
     /// A paid theme without the pack (#113) opens the pack instead of
     /// being picked. The routing is the half a unit test can't see:
     /// the destination sits on `AppearanceView`'s `Form`, and a

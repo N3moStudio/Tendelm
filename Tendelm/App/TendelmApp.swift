@@ -12,6 +12,7 @@ struct TendelmApp: App {
     private var weekStart: WeekStart = WeekStartDefaults.defaultValue
     @AppStorage(HabitThemeDefaults.key, store: HabitThemeDefaults.sharedDefaults)
     private var habitTheme: HabitTheme = HabitThemeDefaults.defaultValue
+    @AppStorage("personal.appearance") private var appearance: AppAppearance = .system
     @AppStorage(AppIconDefaults.key) private var appIcon: AppIcon = AppIconDefaults.defaultValue
     @Environment(\.scenePhase) private var scenePhase
 
@@ -148,6 +149,7 @@ struct TendelmApp: App {
 
         return WindowGroup {
             rootView
+                .preferredColorScheme(appearance.colorScheme)
                 .task { await cloudAccountStatus.refresh() }
                 // A refund granted while the app was closed arrives as a
                 // missing entitlement, not an update — this is where the

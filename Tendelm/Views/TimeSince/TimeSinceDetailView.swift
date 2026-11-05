@@ -19,21 +19,26 @@ struct TimeSinceDetailView: View {
             if let value = tracker {
                 List {
                     Section {
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text(value.name).font(.title2.weight(.semibold))
-                                .fixedSize(horizontal: false, vertical: true)
-                            ElapsedTimeLabel(start: value.currentStart, showsSeconds: true)
-                            Text("Since \(value.currentStart.formatted(date: .abbreviated, time: .shortened))")
-                                .font(.footnote).foregroundStyle(Color.kadoForegroundSecondary)
-                            Button("Log a reset", systemImage: "arrow.counterclockwise") { reset() }
-                                .buttonStyle(.bordered).frame(minHeight: 44)
-                                .accessibilityIdentifier("timeSince.detail.reset")
-                            if !value.resets.isEmpty {
-                                Button("Undo last reset", systemImage: "arrow.uturn.backward") { undo() }
-                                    .frame(minHeight: 44)
-                                    .accessibilityIdentifier("timeSince.detail.undo")
-                            }
-                        }.padding(.vertical, 8)
+                        TimeSinceClock(start: value.currentStart, showsSeconds: true) { now in
+                            VStack(alignment: .leading, spacing: 16) {
+                                Text(value.name).font(.title2.weight(.semibold))
+                                    .fixedSize(horizontal: false, vertical: true)
+                                ElapsedTimeLabel(start: value.currentStart, now: now, showsSeconds: true)
+                                Text(now < value.currentStart
+                                    ? "Starts \(value.currentStart.formatted(date: .abbreviated, time: .shortened))"
+                                    : "Since \(value.currentStart.formatted(date: .abbreviated, time: .shortened))")
+                                    .font(.footnote).foregroundStyle(Color.kadoForegroundSecondary)
+                                Button("Log a reset", systemImage: "arrow.counterclockwise") { reset() }
+                                    .buttonStyle(.bordered).frame(minHeight: 44)
+                                    .accessibilityIdentifier("timeSince.detail.reset")
+                                    .disabled(now < value.currentStart)
+                                if !value.resets.isEmpty {
+                                    Button("Undo last reset", systemImage: "arrow.uturn.backward") { undo() }
+                                        .frame(minHeight: 44)
+                                        .accessibilityIdentifier("timeSince.detail.undo")
+                                }
+                            }.padding(.vertical, 8)
+                        }
                     } footer: {
                         Text("A reset records what happened. Your earlier time still counts.")
                     }
@@ -48,7 +53,7 @@ struct TimeSinceDetailView: View {
                             .accessibilityIdentifier("timeSince.history.\(event.id)")
                         }
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Started")
+                            Text("Start date")
                             Text(value.startedAt, format: .dateTime.day().month().year().hour().minute())
                                 .font(.footnote).foregroundStyle(Color.kadoForegroundSecondary)
                         }

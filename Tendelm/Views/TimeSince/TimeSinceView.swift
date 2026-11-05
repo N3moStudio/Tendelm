@@ -55,39 +55,42 @@ struct TimeSinceView: View {
     }
 
     private func card(_ tracker: TimeSinceTracker) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            NavigationLink(value: tracker.id) {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Image(systemName: "leaf.fill").foregroundStyle(tracker.color.color(in: theme))
-                            .accessibilityHidden(true)
-                        Text(tracker.name).font(.headline).foregroundStyle(Color.kadoForeground)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Spacer(minLength: 8)
-                        Image(systemName: "chevron.right").font(.caption).foregroundStyle(Color.kadoForegroundSecondary)
-                            .accessibilityHidden(true)
+        TimeSinceClock(start: tracker.currentStart) { now in
+            VStack(alignment: .leading, spacing: 16) {
+                NavigationLink(value: tracker.id) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Image(systemName: "leaf.fill").foregroundStyle(tracker.color.color(in: theme))
+                                .accessibilityHidden(true)
+                            Text(tracker.name).font(.headline).foregroundStyle(Color.kadoForeground)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 8)
+                            Image(systemName: "chevron.right").font(.caption).foregroundStyle(Color.kadoForegroundSecondary)
+                                .accessibilityHidden(true)
+                        }
+                        ElapsedTimeLabel(start: tracker.currentStart, now: now)
                     }
-                    ElapsedTimeLabel(start: tracker.currentStart)
+                    .contentShape(Rectangle())
                 }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("timeSince.detail.\(tracker.id)")
-            HStack {
-                Button("Log a reset", systemImage: "arrow.counterclockwise") { reset(tracker.id) }
-                    .buttonStyle(.bordered).tint(Color.kadoAccent)
-                    .frame(minHeight: 44)
-                    .accessibilityHint("Records an occurrence and starts counting again. You can undo it.")
-                    .accessibilityIdentifier("timeSince.reset.\(tracker.id)")
-                Spacer(minLength: 8)
-                if undoIDs[tracker.id] == tracker.orderedResets.last?.id, undoIDs[tracker.id] != nil {
-                    Button("Undo") { undo(tracker.id) }.frame(minHeight: 44)
-                        .accessibilityIdentifier("timeSince.undo.\(tracker.id)")
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("timeSince.detail.\(tracker.id)")
+                HStack {
+                    Button("Log a reset", systemImage: "arrow.counterclockwise") { reset(tracker.id) }
+                        .buttonStyle(.bordered).tint(Color.kadoAccent)
+                        .frame(minHeight: 44)
+                        .accessibilityHint("Records an occurrence and starts counting again. You can undo it.")
+                        .accessibilityIdentifier("timeSince.reset.\(tracker.id)")
+                        .disabled(now < tracker.currentStart)
+                    Spacer(minLength: 8)
+                    if undoIDs[tracker.id] == tracker.orderedResets.last?.id, undoIDs[tracker.id] != nil {
+                        Button("Undo") { undo(tracker.id) }.frame(minHeight: 44)
+                            .accessibilityIdentifier("timeSince.undo.\(tracker.id)")
+                    }
                 }
             }
+            .padding(18)
+            .background(Color.kadoBackgroundSecondary, in: RoundedRectangle(cornerRadius: 20))
         }
-        .padding(18)
-        .background(Color.kadoBackgroundSecondary, in: RoundedRectangle(cornerRadius: 20))
     }
 
     private func reset(_ id: UUID) {

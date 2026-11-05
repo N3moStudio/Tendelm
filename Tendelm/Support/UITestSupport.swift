@@ -173,7 +173,10 @@ nonisolated enum UITestSupport {
         // And the habit colour theme: a run that picks Classic would
         // otherwise paint every later run — the App Store captures
         // included — in the wrong palette.
-        HabitThemeDefaults.sharedDefaults.removeObject(forKey: HabitThemeDefaults.key)
+        if arguments.contains(Argument.resetState) {
+            HabitThemeDefaults.sharedDefaults.removeObject(forKey: HabitThemeDefaults.key)
+            UserDefaults.standard.removeObject(forKey: "personal.appearance")
+        }
         if let index = arguments.firstIndex(of: Argument.habitTheme),
            arguments.indices.contains(index + 1),
            let theme = HabitTheme(rawValue: arguments[index + 1]) {
@@ -299,6 +302,12 @@ nonisolated enum UITestSupport {
             DevModeSeed.seed(into: context)
         }
         archiveFirstHabitIfRequested(using: context)
+        let arguments = ProcessInfo.processInfo.arguments
+        if let index = arguments.firstIndex(of: "-uiTestScheduledStartOffset"),
+           arguments.indices.contains(index + 1), let offset = Double(arguments[index + 1]) {
+            let tracker = TimeSinceTracker(name: "Scheduled tracker", startedAt: .now.addingTimeInterval(offset))
+            try? TimeSinceStore().save(tracker, in: context)
+        }
         if ProcessInfo.processInfo.arguments.contains("-uiTestSeedTimeSince") {
             let now = Date.now
             let firstStart = now.addingTimeInterval(-1_069_200)

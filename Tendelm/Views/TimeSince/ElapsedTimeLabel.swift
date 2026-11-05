@@ -3,30 +3,28 @@ import TendelmCore
 
 struct ElapsedTimeLabel: View {
     let start: Date
+    let now: Date
     var showsSeconds = false
-    @Environment(\.scenePhase) private var scenePhase
-    @State private var visible = false
 
     var body: some View {
-        // Timeline invalidates only this label, never queries or the history grid.
-        Group {
-            if visible && scenePhase == .active {
-                // Anchor updates to the saved start, so minutes change at their
-                // actual boundary even when this screen opens mid-minute.
-                TimelineView(.periodic(from: start, by: showsSeconds ? 1 : 60)) { context in
-                    durationLabel(at: context.date)
-                }
+        let status = TimeSinceStatus(start: start, now: now)
+        VStack(alignment: .leading, spacing: 6) {
+            if status.isScheduled {
+                Text("Starts in")
+                    .font(.subheadline).foregroundStyle(Color.kadoForegroundSecondary)
+                    .accessibilityIdentifier("timeSince.scheduled")
+            }
+            if status.isScheduled && !showsSeconds && status.duration.totalSeconds < 60 {
+                Text("Less than a minute")
+                    .font(.title3).foregroundStyle(Color.kadoForeground)
             } else {
-                durationLabel(at: .now)
+                durationLabel(status.duration)
             }
         }
-        .onAppear { visible = true }
-        .onDisappear { visible = false }
     }
 
-    private func durationLabel(at now: Date) -> some View {
-        let duration = ElapsedDuration(from: start, to: now)
-        return ViewThatFits(in: .horizontal) {
+    private func durationLabel(_ duration: ElapsedDuration) -> some View {
+        ViewThatFits(in: .horizontal) {
             digits(duration, vertical: false)
             digits(duration, vertical: true)
         }

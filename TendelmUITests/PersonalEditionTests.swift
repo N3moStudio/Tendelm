@@ -2,6 +2,64 @@ import XCTest
 
 final class PersonalEditionTests: TendelmUITestCase {
     @MainActor
+    func testChooseFutureDateThenEditAndRelaunch() throws {
+        var app = launchApp()
+        tapTab(.timeSince, in: app)
+        app.buttons["timeSince.new"].tap()
+        let field = nameField(in: app)
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.typeText("Starting next month")
+        app.buttons["timeSince.startOptions"].tap()
+        let date = app.datePickers["timeSince.start"]
+        XCTAssertTrue(date.waitForExistence(timeout: 5))
+        date.buttons.firstMatch.tap()
+        let next = app.buttons["Next Month"].firstMatch
+        XCTAssertTrue(next.waitForExistence(timeout: 5), app.debugDescription)
+        next.tap()
+        let fifteenth = app.buttons.matching(NSPredicate(format: "label CONTAINS '15'")).firstMatch
+        XCTAssertTrue(fifteenth.exists, app.debugDescription)
+        fifteenth.tap()
+        field.tap() // dismiss the compact calendar
+        photograph(app, "06-future-start-editor")
+        app.buttons["timeSince.save"].tap()
+        XCTAssertTrue(app.staticTexts["Starting next month"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["timeSince.scheduled"].exists)
+        XCTAssertFalse(buttons("timeSince.reset.", in: app).firstMatch.isEnabled)
+        photograph(app, "07-scheduled-tracker")
+        buttons("timeSince.detail.", in: app).firstMatch.tap()
+        XCTAssertFalse(app.buttons["timeSince.detail.reset"].isEnabled)
+        photograph(app, "08-scheduled-detail")
+        app.buttons["timeSince.options"].tap()
+        app.buttons["timeSince.edit"].tap()
+        app.buttons["timeSince.save"].tap()
+        XCTAssertTrue(app.staticTexts["timeSince.scheduled"].exists)
+        app.terminate()
+        app = launchApp(resetState: false)
+        tapTab(.timeSince, in: app)
+        XCTAssertTrue(app.staticTexts["Starting next month"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["timeSince.scheduled"].exists)
+        XCTAssertFalse(buttons("timeSince.reset.", in: app).firstMatch.isEnabled)
+    }
+
+    @MainActor
+    func testScheduledTrackerStartsAutomatically() {
+        let app = launchApp(seedProduction: true, scheduledStartOffset: 20)
+        tapTab(.timeSince, in: app)
+        let detail = buttons("timeSince.detail.", in: app).firstMatch
+        XCTAssertTrue(detail.waitForExistence(timeout: 5))
+        detail.tap()
+        let reset = app.buttons["timeSince.detail.reset"]
+        XCTAssertTrue(reset.waitForExistence(timeout: 5))
+        XCTAssertFalse(reset.isEnabled)
+        XCTAssertTrue(app.staticTexts["timeSince.scheduled"].exists)
+        let starts = expectation(for: NSPredicate(format: "isEnabled == true"), evaluatedWith: reset)
+        wait(for: [starts], timeout: 30)
+        XCTAssertFalse(app.staticTexts["timeSince.scheduled"].exists)
+        reset.tap()
+        XCTAssertTrue(app.buttons["timeSince.detail.undo"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
     func testCreateResetUndoEditAndRelaunch() throws {
         var app = launchApp()
         tapTab(.timeSince, in: app)

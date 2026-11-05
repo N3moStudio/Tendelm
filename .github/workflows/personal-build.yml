@@ -37,7 +37,7 @@ jobs:
           xcrun simctl bootstatus "$DEVICE_ID" -b
           xcrun simctl ui "$DEVICE_ID" appearance light
           pgrep -lx xcodebuild || true
-          xcodebuild test-without-building -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=iOS Simulator,id=$DEVICE_ID" -derivedDataPath build -resultBundlePath output/iPhone-Light.xcresult -only-testing:TendelmUITests/PersonalEditionTests -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO > output/iphone-ui.log 2>&1 || { tail -90 output/iphone-ui.log; exit 1; }
+          xcodebuild test-without-building -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=iOS Simulator,id=$DEVICE_ID" -derivedDataPath build -resultBundlePath output/iPhone-Light.xcresult -only-testing:TendelmUITests/PersonalEditionTests -only-testing:TendelmUITests/HabitThemePickerTests -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO > output/iphone-ui.log 2>&1 || { tail -90 output/iphone-ui.log; exit 1; }
           tail -15 output/iphone-ui.log
       - name: Dark appearance screenshots
         run: |
@@ -60,11 +60,11 @@ jobs:
           mkdir -p output/Payload
           cp -R device-build/Build/Products/Release-iphoneos/Tendelm.app output/Payload/
           cd output
-          zip -qr Tendelm-1.0.0.ipa Payload
-          shasum -a 256 Tendelm-1.0.0.ipa > Tendelm-1.0.0.ipa.sha256
+          zip -qr Tendelm-1.0.1.ipa Payload
+          shasum -a 256 Tendelm-1.0.1.ipa > Tendelm-1.0.1.ipa.sha256
           rm -rf Payload
       - name: Inspect device package
-        run: python3 Scripts/verify-personal-ipa.py output/Tendelm-1.0.0.ipa > output/package-inspection.json
+        run: python3 Scripts/verify-personal-ipa.py output/Tendelm-1.0.1.ipa > output/package-inspection.json
       - name: Verify reset regression test
         run: bash Scripts/check-reset-guard.sh
       - name: Export evidence

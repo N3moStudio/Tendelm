@@ -14,10 +14,19 @@ nonisolated public enum HabitThemeDefaults {
     public static let defaultValue: HabitTheme = .kado
 
     /// UserDefaults suite shared between the main app and the widget
-    /// extension. Returns `.standard` when the App Group suite can't
-    /// be opened so the app still launches.
+    /// extension. Creating a suite object alone does not prove the app has
+    /// access to that group. Sideloaded installs may have no group entitlement.
     nonisolated(unsafe) public static let sharedDefaults: UserDefaults = {
-        UserDefaults(suiteName: SharedStore.appGroupID) ?? .standard
+        let shared = UserDefaults(suiteName: SharedStore.appGroupID)
+        guard SharedStore.appGroupContainerURL() != nil else {
+            // Keep an earlier pick without overwriting an existing local pick.
+            if UserDefaults.standard.object(forKey: key) == nil,
+               let raw = shared?.string(forKey: key), HabitTheme(rawValue: raw) != nil {
+                UserDefaults.standard.set(raw, forKey: key)
+            }
+            return .standard
+        }
+        return shared ?? .standard
     }()
 
     /// Reads the stored choice. An unset key, or a raw value written
@@ -27,11 +36,8 @@ nonisolated public enum HabitThemeDefaults {
         defaults.string(forKey: key).flatMap(HabitTheme.init(rawValue:)) ?? defaultValue
     }
 
-    /// The theme to paint in outside the app: the stored pick, gated on
-    /// the App Group's Supporter pack mirror, so a widget falls back to
-    /// Tendelm when the pack is refunded. What the widgets read — never
-    /// ``theme(in:)`` on its own, which would keep painting a lapsed
-    /// paid theme.
+    /// Widgets use the same preference. Every Tendelm palette is included;
+    /// the legacy supporter mirror cannot make a selected palette disappear.
     public static func renderedTheme(
         in defaults: UserDefaults = sharedDefaults,
         supporterDefaults: UserDefaults = SupporterDefaults.sharedDefaults

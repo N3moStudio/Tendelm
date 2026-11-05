@@ -1,40 +1,41 @@
 import SwiftUI
 import TendelmCore
 
-/// Settings → Appearance: how Tendelm looks, as opposed to how it
-/// behaves: the habit colour theme and the Home Screen icon.
+/// Display appearance and habit/trackers' color palette are separate choices.
 struct AppearanceView: View {
-    /// Set by a tap on a locked habit theme or app icon. The destination is attached
-    /// to the `Form` rather than inside the section, because a
-    /// `navigationDestination` inside a lazy container like `Form` is
-    /// ignored.
-    @State private var showsSupporterPack = false
+    @AppStorage("personal.appearance") private var appearance: AppAppearance = .system
     @Environment(\.appearanceAnnouncement) private var appearanceAnnouncement
 
     var body: some View {
         Form {
-            HabitThemeSection(showsSupporterPack: $showsSupporterPack)
-            // Tendelm keeps its own identity; the upstream alternate artwork is not offered.
+            Section("Display") {
+                Picker("Appearance", selection: $appearance) {
+                    Text("System").tag(AppAppearance.system)
+                    Text("Light").tag(AppAppearance.light)
+                    Text("Dark").tag(AppAppearance.dark)
+                }
+                .pickerStyle(.segmented)
+                .accessibilityIdentifier("appearance.display")
+            }
+            .listRowBackground(Color.kadoBackgroundSecondary)
+            HabitThemeSection()
         }
         .scrollContentBackground(.hidden)
         .background(Color.kadoBackground.ignoresSafeArea())
         .navigationTitle("Appearance")
-        .navigationDestination(isPresented: $showsSupporterPack) {
-            SupporterPackView()
-        }
         // Whichever way the user got here — Today's card or Settings —
         // they have found the screen, so Today stops announcing it.
         .onAppear { appearanceAnnouncement.retire() }
     }
 }
 
-#Preview("Locked") {
+#Preview("Appearance") {
     NavigationStack {
         AppearanceView()
     }
 }
 
-#Preview("Supporter") {
+#Preview("Palettes") {
     NavigationStack {
         AppearanceView()
     }
