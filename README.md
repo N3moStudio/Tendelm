@@ -15,16 +15,16 @@ A calm personal habit and time-since tracker for iPhone and iPad. Built from [Ka
 
 ## Personal build
 
-Version **1.0.2 (3) is local source only**, prepared for the next build. No native build, simulator run, upload, or IPA replacement was performed for these changes, at the user's request. See [build handoff](docs/TENDELM-1.0.2-BUILD-HANDOFF.md).
+Version **1.0.2 (3)** was built privately on Codemagic and delivered as `C:\Users\naith\Desktop\ipa\My Projects (N3mo Studio)\Tendelm-1.0.2.ipa`. It requires personal sideload signing. See [validation evidence](docs/TENDELM-1.0.2-VALIDATION.md) and [build handoff](docs/TENDELM-1.0.2-BUILD-HANDOFF.md).
 
-The previously built version is **1.0.1 (2)**. Its [validation evidence](docs/TENDELM-1.0.1-VALIDATION.md) and [simulator screenshots](docs/screenshots/tendelm-1.0.1) apply only to that version. The current IPA remains `C:\Users\naith\Desktop\ipa\My Projects (N3mo Studio)\Tendelm-1.0.1.ipa` and requires personal signing. [Build 1 evidence](docs/TENDELM-VALIDATION.md) remains available.
+Historical [1.0.1 validation evidence](docs/TENDELM-1.0.1-VALIDATION.md), [1.0.1 simulator screenshots](docs/screenshots/tendelm-1.0.1), and [build 1 evidence](docs/TENDELM-VALIDATION.md) apply only to those versions. The older Tendelm IPA was moved to the Recycle Bin after verifying the replacement.
 
 - Local repository: `C:\Users\naith\Documents\GitHub\Tendelm`
 - Project: `Tendelm.xcodeproj`, scheme `Tendelm`; core module `Packages/TendelmCore`.
 - Bundle ID: `com.n3mostudio.tendelm`; widget: `com.n3mostudio.tendelm.TendelmWidgets`.
 - Minimum system: iOS / iPadOS 18. Build on a Mac with Xcode 26.3 or later.
-- Private CI workflow: `.github/workflows/personal-build.yml`. It runs tests, captures simulator screenshots, and packages an unsigned arm64 IPA for personal signing.
-- GitHub-independent build entry point: on a suitable Mac, run `bash Scripts/build-personal.sh` from this checkout. It runs unit and focused UI tests before producing an unsigned device IPA. This command has **not** been run for 1.0.2.
+- Current private CI workflow: `codemagic.yaml`, manually started on a Mac M2 using the private GitLab repository. It runs tests, captures simulator evidence, and packages an unsigned arm64 IPA for personal signing. The older GitHub workflow is retained.
+- GitHub-independent build entry point: on a suitable Mac, run `bash Scripts/build-personal.sh` from this checkout. This script produced the verified 1.0.2 IPA; the validation record distinguishes reused passing tests from the final run.
 - Storage is local. This fork cannot use the original developer's iCloud container. Export before uninstalling or changing signing identities. Widget sharing depends on the signing method preserving a provisioned App Group.
 
 ## Credits and identity
