@@ -16,7 +16,7 @@ struct SettingsIcon: View {
 struct SettingsRow: View {
     let title: LocalizedStringKey
     let symbol: String
-    var subtitle: String? = nil
+    var subtitle: LocalizedStringKey? = nil
     var body: some View {
         HStack(spacing: 12) {
             SettingsIcon(symbol: symbol)
