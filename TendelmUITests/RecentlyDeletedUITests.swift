@@ -125,7 +125,19 @@ final class RecentlyDeletedUITests: TendelmUITestCase {
         app.buttons["settings.importExport"].tap()
         XCTAssertTrue(app.buttons["backup.paste"].waitForExistence(timeout: 5))
         capture(app, "21-import-settings-large-text")
-        XCTAssertTrue(app.links["json.site"].exists)
+        scrollTo(app.links["json.site"].firstMatch, in: app)
+    }
+
+    @MainActor
+    private func todayRow(_ id: UUID, in app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: "today.row.\(id.uuidString)").firstMatch
+    }
+
+    @MainActor
+    private func habitID(of element: XCUIElement, prefix: String) -> UUID {
+        let id = UUID(uuidString: String(element.identifier.dropFirst(prefix.count)))
+        XCTAssertNotNil(id)
+        return id ?? UUID()
     }
 
     @MainActor
