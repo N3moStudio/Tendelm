@@ -11,27 +11,29 @@ import TendelmCore
 struct SettingsView: View {
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    Label("Saved on this device", systemImage: "iphone")
-                    Text("This personal edition uses local storage. Export a backup before changing signing identities or removing the app.")
-                        .font(.footnote)
-                        .foregroundStyle(Color.kadoForegroundSecondary)
+            BackupSettingsContainer { backupSection in
+                Form {
+                    Section {
+                        Label("Saved on this device", systemImage: "iphone")
+                        Text("This personal edition uses local storage. Export a backup before changing signing identities or removing the app.")
+                            .font(.footnote)
+                            .foregroundStyle(Color.kadoForegroundSecondary)
+                    }
+                    .listRowBackground(Color.kadoBackgroundSecondary)
+                    DayStartSection()
+                    WeekStartSection()
+                    AppearanceSection()
+                    NotificationsSection()
+                    ArchivedSection()
+                    backupSection
+                    SupportSection()
+                    DevModeSection()
+                    wordmarkFooter
                 }
-                .listRowBackground(Color.kadoBackgroundSecondary)
-                DayStartSection()
-                WeekStartSection()
-                AppearanceSection()
-                NotificationsSection()
-                ArchivedSection()
-                BackupSection()
-                SupportSection()
-                DevModeSection()
-                wordmarkFooter
+                .scrollContentBackground(.hidden)
+                .background(Color.kadoBackground.ignoresSafeArea())
+                .navigationTitle("Settings")
             }
-            .scrollContentBackground(.hidden)
-            .background(Color.kadoBackground.ignoresSafeArea())
-            .navigationTitle("Settings")
         }
     }
 

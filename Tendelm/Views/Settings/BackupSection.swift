@@ -5,9 +5,14 @@ import TendelmCore
 
 /// Settings section that wires the JSON round-trip: export the full
 /// store as a `.json` file via the share sheet, import a file or pasted
-/// contents through the same review. Attaches as a regular `Form` section between
-/// Notifications and Dev Mode.
-struct BackupSection: View {
+/// contents through the same review. Presentations attach to the complete Form,
+/// not to a Section whose rows can be recycled while scrolling.
+struct BackupSettingsContainer<Content: View>: View {
+    private let content: (AnyView) -> Content
+
+    init(@ViewBuilder content: @escaping (AnyView) -> Content) {
+        self.content = content
+    }
     @Environment(\.modelContext) private var modelContext
     @Environment(\.backupExporter) private var exporter
     @Environment(\.backupImporter) private var importer
@@ -26,6 +31,45 @@ struct BackupSection: View {
     @State private var presentedAlert: PresentedAlert?
 
     var body: some View {
+        // This is one fixed section; erasure lets the caller compose its Form.
+        content(AnyView(section))
+        .onDisappear { exportTask?.cancel() }
+        .fileImporter(
+            isPresented: $isShowingImporter,
+            allowedContentTypes: [.json, .commaSeparatedText]
+        ) { result in
+            handleFileImport(result)
+        }
+        .sheet(item: $presentedSheet) { sheet in
+            switch sheet {
+            case .helper(let site):
+                ImportHelperBrowser(site: site)
+            case .share(let url):
+                ShareSheet(activityItems: [url])
+                    .ignoresSafeArea()
+            case .confirmImport(let document, let summary):
+                ImportConfirmSheet(
+                    summary: summary,
+                    onCancel: { presentedSheet = nil },
+                    onConfirm: { commitImport(document) }
+                )
+            }
+        }
+        .alert(
+            presentedAlert?.title ?? "",
+            isPresented: Binding(
+                get: { presentedAlert != nil },
+                set: { if !$0 { presentedAlert = nil } }
+            ),
+            presenting: presentedAlert
+        ) { _ in
+            Button("OK", role: .cancel) { presentedAlert = nil }
+        } message: { alert in
+            alert.message
+        }
+    }
+
+    private var section: some View {
         Section {
             Menu {
                 Button {
@@ -86,40 +130,6 @@ struct BackupSection: View {
             }
         }
         .listRowBackground(Color.kadoBackgroundSecondary)
-        .onDisappear { exportTask?.cancel() }
-        .fileImporter(
-            isPresented: $isShowingImporter,
-            allowedContentTypes: [.json, .commaSeparatedText]
-        ) { result in
-            handleFileImport(result)
-        }
-        .sheet(item: $presentedSheet) { sheet in
-            switch sheet {
-            case .helper(let site):
-                ImportHelperBrowser(site: site)
-            case .share(let url):
-                ShareSheet(activityItems: [url])
-                    .ignoresSafeArea()
-            case .confirmImport(let document, let summary):
-                ImportConfirmSheet(
-                    summary: summary,
-                    onCancel: { presentedSheet = nil },
-                    onConfirm: { commitImport(document) }
-                )
-            }
-        }
-        .alert(
-            presentedAlert?.title ?? "",
-            isPresented: Binding(
-                get: { presentedAlert != nil },
-                set: { if !$0 { presentedAlert = nil } }
-            ),
-            presenting: presentedAlert
-        ) { _ in
-            Button("OK", role: .cancel) { presentedAlert = nil }
-        } message: { alert in
-            alert.message
-        }
     }
 
     // MARK: - Export
@@ -403,16 +413,16 @@ private struct ShareSheet: UIViewControllerRepresentable {
 // MARK: - Previews
 
 #Preview("Never exported") {
-    Form { BackupSection() }
+    BackupSettingsContainer { section in Form { section } }
 }
 
 #Preview("Previously exported") {
-    Form { BackupSection() }
+    BackupSettingsContainer { section in Form { section } }
         .defaultAppStorage(.preview(lastExportAt: Date.now.timeIntervalSince1970 - 86_400))
 }
 
 #Preview("Dark") {
-    Form { BackupSection() }
+    BackupSettingsContainer { section in Form { section } }
         .defaultAppStorage(.preview(lastExportAt: Date.now.timeIntervalSince1970 - 3600))
         .preferredColorScheme(.dark)
 }

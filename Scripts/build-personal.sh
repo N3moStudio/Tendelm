@@ -84,7 +84,7 @@ run_xcode() {
   fi
 }
 
-ui_tests=(-only-testing:TendelmUITests/PersonalEditionTests -only-testing:TendelmUITests/HabitThemePickerTests -only-testing:TendelmUITests/PasteImportTests)
+ui_tests=(-only-testing:TendelmUITests/PersonalEditionTests -only-testing:TendelmUITests/HabitThemePickerTests)
 if [[ -n "$baseline" ]]; then
   # A manual resume is only for an already-verified unit suite and unchanged
   # production code. Normal builds always run the complete selection below.
@@ -126,6 +126,15 @@ fi
 xcrun simctl boot "$device_id" 2>/dev/null || true
 xcrun simctl bootstatus "$device_id" -b
 xcrun simctl ui "$device_id" appearance light
+if [[ -z "$baseline" ]]; then
+  # Run the new import interactions first so presentation failures are diagnosed
+  # before the broader UI pass; each light-mode test is still run only once.
+  run_xcode paste-ui test-without-building -project Tendelm.xcodeproj -scheme Tendelm \
+    -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath "$out/DerivedData" \
+    -resultBundlePath "$out/Paste-iPhone.xcresult" -only-testing:TendelmUITests/PasteImportTests \
+    -parallel-testing-enabled NO -test-timeouts-enabled YES \
+    -default-test-execution-time-allowance 90 -maximum-test-execution-time-allowance 180 CODE_SIGNING_ALLOWED=NO
+fi
 run_xcode iphone-ui test-without-building -project Tendelm.xcodeproj -scheme Tendelm \
   -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath "$out/DerivedData" \
   -resultBundlePath "$out/iPhone.xcresult" "${ui_tests[@]}" -parallel-testing-enabled NO \
