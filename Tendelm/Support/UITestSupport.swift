@@ -271,7 +271,7 @@ nonisolated enum UITestSupport {
     /// with it is unchanged.
     static func productionContainerOverride() -> ModelContainer? {
         guard isRunningUITests else { return nil }
-        let schema = Schema(versionedSchema: TendelmSchemaV5.self)
+        let schema = Schema(versionedSchema: TendelmSchemaV6.self)
         let configuration = ModelConfiguration(
             schema: schema,
             url: productionStoreURL(),
@@ -294,12 +294,15 @@ nonisolated enum UITestSupport {
     /// Goes through the container the app already built rather than
     /// opening one of its own — two containers over one store is the
     /// shape that traps with `NSCocoaErrorDomain 134422`.
+    @MainActor private static var didSeedProduction = false
+
     @MainActor
     static func seedProductionIfRequested(using container: ModelContainer) {
-        guard isRunningUITests,
+        guard isRunningUITests, !didSeedProduction,
               ProcessInfo.processInfo.arguments.contains(Argument.seedProduction)
         else { return }
         let context = container.mainContext
+        didSeedProduction = true
         let count = (try? context.fetchCount(FetchDescriptor<HabitRecord>())) ?? 0
         guard count == 0 else { return }
         if ProcessInfo.processInfo.arguments.contains(Argument.seedForScreenshots) {

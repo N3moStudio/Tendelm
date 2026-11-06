@@ -38,13 +38,13 @@ struct ExternalImportView: View {
                 }
                 if isReading { TendelmProgressLabel(title: "Reading your history…") }
             } footer: {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Files won't open? Open the helper, choose your CSV and copy the JSON output. Tap Done, then Paste here. Raw CSV text works too.")
-                    Button("Open CSV helper") { helper = .csv }
-                        .accessibilityIdentifier("externalImport.helper")
-                        .disabled(isReading || showsPicker || helper != nil)
-                    Text("Tendelm sends nothing to the helper. Pasting only prepares a preview.")
-                }
+                Text("Open [CSVJSON](https://csvjson.com/csv2json), choose your CSV and copy the JSON. Tap Done and Paste here to preview it.")
+                    .environment(\.openURL, OpenURLAction { url in
+                        guard url == ImportHelperSite.csv.url else { return .systemAction }
+                        guard !isReading, !showsPicker, helper == nil else { return .discarded }
+                        helper = .csv
+                        return .handled
+                    })
             }
             .listRowBackground(Color.kadoBackgroundSecondary)
 

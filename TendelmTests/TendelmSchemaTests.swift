@@ -27,15 +27,15 @@ struct TendelmSchemaTests {
         #expect(TendelmSchemaV4.versionIdentifier == Schema.Version(4, 0, 0))
     }
 
-    @Test("Migration plan declares V1→V2, V2→V3, and V3→V4 lightweight stages")
+    @Test("Migration plan includes every shipped schema through V6")
     func migrationPlanShape() {
-        #expect(TendelmMigrationPlan.schemas.count == 5)
-        #expect(TendelmMigrationPlan.stages.count == 4)
+        #expect(TendelmMigrationPlan.schemas.count == 6)
+        #expect(TendelmMigrationPlan.stages.count == 5)
     }
 
-    @Test("In-memory ModelContainer constructs from the current (V4) schema")
+    @Test("In-memory ModelContainer constructs from the current V6 schema")
     func containerBuildsFromPlan() throws {
-        let schema = Schema(versionedSchema: TendelmSchemaV5.self)
+        let schema = Schema(versionedSchema: TendelmSchemaV6.self)
         let container = try ModelContainer(
             for: schema,
             migrationPlan: TendelmMigrationPlan.self,

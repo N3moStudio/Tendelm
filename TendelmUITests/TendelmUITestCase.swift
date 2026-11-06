@@ -201,6 +201,27 @@ class TendelmUITestCase: XCTestCase {
         button.tap()
     }
 
+    @MainActor
+    func openSettingsPage(_ identifier: String, in app: XCUIApplication) {
+        tapTab(.settings, in: app)
+        for _ in 0..<3 {
+            if app.navigationBars["Settings"].exists { break }
+            goBack(in: app)
+        }
+        let entry = app.buttons[identifier]
+        scrollTo(entry, in: app)
+        entry.tap()
+    }
+
+    @MainActor
+    func openImportSettings(in app: XCUIApplication) {
+        tapTab(.settings, in: app)
+        if app.navigationBars["Import & export"].exists { return }
+        let entry = app.buttons["settings.importExport"]
+        scrollTo(entry, in: app)
+        entry.tap()
+    }
+
     /// Scrolls until `element` exists and can be tapped.
     ///
     /// `waitForExistence` alone is not enough for anything below the

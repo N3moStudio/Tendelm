@@ -29,6 +29,7 @@ struct ArchivedHabitsView: View {
     /// The habit whose Delete is awaiting confirmation. An id, so the
     /// dialog can't hold a record across a container swap.
     @State private var confirmingDeleteOf: UUID?
+    @State private var deletionError: String?
 
     private var rows: [ArchivedHabitRow] {
         ArchivedHabitRow.rows(from: archivedHabits)
@@ -51,8 +52,11 @@ struct ArchivedHabitsView: View {
                 .accessibilityIdentifier(AccessibilityID.Archived.deleteConfirmButton)
                 Button(String(localized: "Cancel"), role: .cancel) {}
             } message: { _ in
-                Text("This permanently deletes the habit and all of its history. This can’t be undone.")
+                Text("The habit and its history will stay in Recently Deleted for 30 days.")
             }
+            .alert("Couldn't delete habit", isPresented: Binding(get: { deletionError != nil }, set: { if !$0 { deletionError = nil } })) {
+                Button("OK", role: .cancel) {}
+            } message: { Text(deletionError ?? "") }
     }
 
     @ViewBuilder
@@ -186,9 +190,10 @@ struct ArchivedHabitsView: View {
     }
 
     private func delete(_ habitID: UUID) {
-        guard let record = record(for: habitID) else { return }
-        HabitLifecycle().delete(record, in: modelContext)
-        WidgetReloader.reloadAll(using: modelContext)
+        do {
+            try RecentlyDeletedStore().moveHabit(id: habitID, in: modelContext)
+            WidgetReloader.reloadAll(using: modelContext)
+        } catch { deletionError = error.localizedDescription }
     }
 }
 

@@ -33,6 +33,22 @@ final class DevModeController {
         enabled ? devContainer() : productionContainer()
     }
 
+    /// Called only by the confirmed full reset. The demo store is emptied first;
+    /// it is never seeded during erasure. Each store commits atomically.
+    func eraseAllRecords() throws -> ModelContainer {
+        if cachedDevContainer != nil || FileManager.default.fileExists(atPath: devStoreURL.path) {
+            let demo = try cachedDevContainer ?? makeDevContainer()
+            try RecentlyDeletedStore().eraseRecords(in: demo.mainContext)
+        }
+        let production = productionContainer()
+        do { try RecentlyDeletedStore().eraseRecords(in: production.mainContext) }
+        catch {
+            throw NSError(domain: "Tendelm.Reset", code: 1, userInfo: [NSLocalizedDescriptionKey:
+                "Your saved items couldn't be erased. They were kept. Demo data may already be cleared. Finish any open edit and try again."])
+        }
+        return production
+    }
+
     /// Wipe any previous sandbox on disk. Call this on every off→on
     /// transition. The fresh container is built lazily on next
     /// `container(forDevMode: true)` and seeded because the file is
@@ -92,7 +108,7 @@ final class DevModeController {
     }
 
     private func makeDevContainer() throws -> ModelContainer {
-        let schema = Schema(versionedSchema: TendelmSchemaV5.self)
+        let schema = Schema(versionedSchema: TendelmSchemaV6.self)
         let configuration = ModelConfiguration(
             schema: schema,
             url: devStoreURL,

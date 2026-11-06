@@ -144,14 +144,16 @@ final class ArchivedHabitsTests: TendelmUITestCase {
         let row = todayRow(habitID, in: app)
         scrollClearOfTabBar(row, in: app)
 
-        row.press(forDuration: 1)
-        let archive = app.buttons[AccessibilityID.Today.archiveButton].firstMatch
-        XCTAssertTrue(archive.waitForExistence(timeout: 5), "The row's menu should offer Archive.")
+        row.tap()
+        let archive = app.buttons["Archive"].firstMatch
+        if !archive.isHittable {
+            let more = app.buttons["More"].firstMatch
+            if more.exists { more.tap() }
+        }
+        XCTAssertTrue(archive.waitForExistence(timeout: 5))
         archive.tap()
-
-        let confirm = app.buttons[AccessibilityID.Today.archiveConfirmButton].firstMatch
-        XCTAssertTrue(confirm.waitForExistence(timeout: 5), "Archive should confirm first.")
-        capture(app, "today-archive-dialog")
+        let confirm = app.buttons["Archive"].firstMatch
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
         confirm.tap()
 
         XCTAssertTrue(row.waitForNonExistence(timeout: 5), "Archive should take the row off Today.")

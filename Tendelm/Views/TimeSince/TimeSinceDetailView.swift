@@ -94,9 +94,9 @@ struct TimeSinceDetailView: View {
                 }
             }
         }
-        .confirmationDialog("Delete this tracker and its history?", isPresented: $showsDelete, titleVisibility: .visible) {
+        .confirmationDialog("Move this tracker to Recently Deleted?", isPresented: $showsDelete, titleVisibility: .visible) {
             Button("Delete tracker", role: .destructive) {
-                do { try TimeSinceStore().delete(id: trackerID, in: context); dismiss() }
+                do { try RecentlyDeletedStore().moveTracker(id: trackerID, in: context); WidgetReloader.reloadAll(using: context); dismiss() }
                 catch { self.error = error.localizedDescription }
             }
             Button("Cancel", role: .cancel) {}

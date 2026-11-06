@@ -88,7 +88,20 @@ struct TimeSinceView: View {
             }
             .padding(18)
             .background(Color.kadoBackgroundSecondary, in: RoundedRectangle(cornerRadius: 20))
+            .contextMenu {
+                Button("Delete", systemImage: "trash", role: .destructive) { moveToRecentlyDeleted(tracker.id) }
+                    .accessibilityIdentifier("tracker.delete")
+            }
+            .accessibilityAction(named: "Delete") { moveToRecentlyDeleted(tracker.id) }
         }
+    }
+
+    private func moveToRecentlyDeleted(_ id: UUID) {
+        do {
+            undoAction = nil
+            try RecentlyDeletedStore().moveTracker(id: id, in: context)
+            WidgetReloader.reloadAll(using: context)
+        } catch { self.error = error.localizedDescription }
     }
 
     private func reset(_ id: UUID) {

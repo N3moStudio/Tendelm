@@ -70,66 +70,61 @@ struct BackupSettingsContainer<Content: View>: View {
     }
 
     private var section: some View {
-        Section {
-            Menu {
-                Button {
-                    performExport(format: .json)
-                } label: {
-                    Label("JSON", systemImage: "curlybraces")
+        Group {
+            Section {
+                Button { isShowingImporter = true } label: {
+                    SettingsRow(title: "Choose backup file", symbol: "doc")
                 }
-                Button {
-                    performExport(format: .csv)
-                } label: {
-                    Label("CSV", systemImage: "tablecells")
+                .disabled(isExporting || presentedSheet != nil || isShowingImporter)
+                .accessibilityIdentifier("backup.importFile")
+                HStack(spacing: 12) {
+                    SettingsIcon(symbol: "doc.on.clipboard")
+                    Text("Paste backup text")
+                    Spacer(minLength: 8)
+                    PasteButton(payloadType: String.self, onPaste: handlePastedText)
+                        .labelStyle(.titleOnly)
+                        .accessibilityLabel("Paste backup text")
+                        .accessibilityIdentifier("backup.paste")
+                        .disabled(isExporting || presentedSheet != nil || isShowingImporter)
+                }.frame(minHeight: 44)
+            } header: { Text("Import a backup") }
+            footer: {
+                Text("Open [json.site](https://json.site), copy the JSON, then tap Done and Paste here.")
+                    .environment(\.openURL, OpenURLAction { url in
+                        guard url == ImportHelperSite.json.url else { return .systemAction }
+                        guard !isExporting, presentedSheet == nil, !isShowingImporter else { return .handled }
+                        presentedSheet = .helper(.json)
+                        return .handled
+                    })
+            }
+            .listRowBackground(Color.kadoBackgroundSecondary)
+            Section {
+                Menu {
+                    Button("JSON", systemImage: "curlybraces") { performExport(format: .json) }
+                    Button("CSV", systemImage: "tablecells") { performExport(format: .csv) }
+                } label: { SettingsRow(title: "Export backup", symbol: "square.and.arrow.up") }
+                    .disabled(isExporting || presentedSheet != nil)
+                if isExporting { TendelmProgressLabel(title: "Preparing backup…") }
+                if lastExportAt > 0 {
+                    Text("Last export: \(lastExportDisplay)").font(.footnote).foregroundStyle(Color.kadoForegroundSecondary)
                 }
-            } label: {
-                Label("Export Data", systemImage: "square.and.arrow.up")
-            }
-            .disabled(isExporting)
-            if isExporting { TendelmProgressLabel(title: "Preparing backup…") }
-
-            if lastExportAt > 0 {
-                Text("Last export: \(lastExportDisplay)")
-                    .font(.footnote)
-                    .foregroundStyle(Color.kadoForegroundSecondary)
-            }
-
-            Button {
-                isShowingImporter = true
-            } label: {
-                Label("Import Data", systemImage: "square.and.arrow.down")
-            }
-            .disabled(isExporting || presentedSheet != nil || isShowingImporter)
-            .accessibilityIdentifier("backup.importFile")
-            HStack {
-                Label("Paste backup text", systemImage: "doc.on.clipboard")
-                Spacer(minLength: 8)
-                PasteButton(payloadType: String.self, onPaste: handlePastedText)
-                    .labelStyle(.titleOnly)
-                    .accessibilityLabel("Paste backup text")
-                    .accessibilityIdentifier("backup.paste")
-                    .disabled(isExporting || presentedSheet != nil || isShowingImporter)
-            }
-            NavigationLink {
-                ExternalImportView()
-            } label: {
-                Label("Import from another app", systemImage: "arrow.down.doc")
-            }
-            .disabled(isExporting)
-            .accessibilityIdentifier("externalImport.open")
-        } header: {
-            Text("Data")
-                .foregroundStyle(Color.kadoForegroundSecondary)
-        } footer: {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Files won't open? Open json.site, choose your JSON backup and copy its contents. Tap Done, then Paste backup text here.")
-                Button("Open json.site") { presentedSheet = .helper(.json) }
-                    .accessibilityIdentifier("backup.helper")
-                    .disabled(isExporting || presentedSheet != nil || isShowingImporter)
-                Text("Nothing is sent automatically. You'll review the backup before importing.")
-            }
+            } header: { Text("Export a backup") }
+            footer: { Text("Save your habits, daily history and time-since trackers together.") }
+            .listRowBackground(Color.kadoBackgroundSecondary)
+            Section {
+                NavigationLink { ExternalImportView() } label: {
+                    SettingsRow(title: "Import from another app", symbol: "arrow.down.doc")
+                }.accessibilityIdentifier("externalImport.open")
+            } header: { Text("From another app") }
+            footer: { Text("Bring daily history from Streaks, Habitify or a simple CSV.") }
+            .listRowBackground(Color.kadoBackgroundSecondary)
+            Section {
+                DisclosureGroup("What's in a backup?") {
+                    Text("Backups include active and archived habits, their daily entries, and time-since trackers with reset history. Recently Deleted and appearance settings stay on this device.")
+                    Text("Import merges by identity. Matching records are updated; other saved items stay. To start completely fresh, use Privacy & reset → Erase all data first.")
+                }.font(.subheadline)
+            }.listRowBackground(Color.kadoBackgroundSecondary)
         }
-        .listRowBackground(Color.kadoBackgroundSecondary)
     }
 
     // MARK: - Export
@@ -269,7 +264,7 @@ private struct ImportConfirmSheet: View {
                     }
                 }
             }
-            .navigationTitle("Import Tendelm backup")
+            .navigationTitle("Review backup")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

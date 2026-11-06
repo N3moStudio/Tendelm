@@ -84,7 +84,7 @@ run_xcode() {
   fi
 }
 
-ui_tests=(-only-testing:TendelmUITests/PersonalEditionTests -only-testing:TendelmUITests/HabitThemePickerTests)
+ui_tests=(-only-testing:TendelmUITests/PersonalEditionTests -only-testing:TendelmUITests/HabitThemePickerTests -only-testing:TendelmUITests/OverviewDayEditTests -only-testing:TendelmUITests/DayStartPickerTests -only-testing:TendelmUITests/DevModeSwapTests)
 if [[ -n "$baseline" ]]; then
   # A manual resume is only for an already-verified unit suite and unchanged
   # production code. Normal builds always run the complete selection below.
@@ -131,7 +131,7 @@ if [[ -z "$baseline" ]]; then
   # before the broader UI pass; each light-mode test is still run only once.
   run_xcode paste-ui test-without-building -project Tendelm.xcodeproj -scheme Tendelm \
     -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath "$out/DerivedData" \
-    -resultBundlePath "$out/Paste-iPhone.xcresult" -only-testing:TendelmUITests/PasteImportTests \
+    -resultBundlePath "$out/Paste-iPhone.xcresult" -only-testing:TendelmUITests/PasteImportTests -only-testing:TendelmUITests/RecentlyDeletedUITests \
     -parallel-testing-enabled NO -test-timeouts-enabled YES \
     -default-test-execution-time-allowance 90 -maximum-test-execution-time-allowance 180 CODE_SIGNING_ALLOWED=NO
 fi
@@ -145,6 +145,7 @@ run_xcode iphone-dark test-without-building -project Tendelm.xcodeproj -scheme T
   -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath "$out/DerivedData" \
   -resultBundlePath "$out/iPhone-Dark.xcresult" \
   -only-testing:TendelmUITests/PersonalEditionTests/testCapturePersonalScreens \
+  -only-testing:TendelmUITests/RecentlyDeletedUITests/testTodayDeleteAndRestoreSurviveRelaunch \
   -only-testing:TendelmUITests/PersonalEditionTests/testExternalImportEntryAndHelp \
   -only-testing:TendelmUITests/PersonalEditionTests/testSwipeDeleteHistoryUndoAndRelaunch \
   -only-testing:TendelmUITests/PasteImportTests/testBackupPasteCancelImportAndRelaunch \
@@ -156,6 +157,7 @@ run_xcode ipad-ui test-without-building -project Tendelm.xcodeproj -scheme Tende
   -destination "platform=iOS Simulator,id=$ipad_id" -derivedDataPath "$out/DerivedData" \
   -resultBundlePath "$out/iPad.xcresult" \
   -only-testing:TendelmUITests/PersonalEditionTests/testCapturePersonalScreens \
+  -only-testing:TendelmUITests/RecentlyDeletedUITests/testTodayDeleteAndRestoreSurviveRelaunch \
   -only-testing:TendelmUITests/PersonalEditionTests/testExternalImportEntryAndHelp \
   -only-testing:TendelmUITests/PersonalEditionTests/testSwipeDeleteHistoryUndoAndRelaunch \
   -only-testing:TendelmUITests/PasteImportTests/testHistoryPastePreviewCancelAndRepeatImport \

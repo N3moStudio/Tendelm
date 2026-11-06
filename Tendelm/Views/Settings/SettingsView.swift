@@ -1,75 +1,66 @@
 import SwiftUI
+import SwiftData
 import TendelmCore
 
-/// The Settings tab.
-///
-/// v0.1 surfaces the iCloud account status only — there is no in-app
-/// sync toggle, by design. Control lives in iOS Settings → Apple ID
-/// → iCloud → Tendelm, matching the native pattern used by Reminders,
-/// Journal, and Streaks. v1.0 adds About, themes, biometrics, and
-/// export sections below this one.
 struct SettingsView: View {
+    @Environment(\.habitTheme) private var renderedTheme
+    @Query(filter: #Predicate<HabitRecord> { $0.archivedAt != nil }) private var archived: [HabitRecord]
+    @Query private var deleted: [RecentlyDeletedRecord]
+
     var body: some View {
         NavigationStack {
-            BackupSettingsContainer { backupSection in
-                Form {
-                    Section {
-                        Label("Saved on this device", systemImage: "iphone")
-                        Text("This personal edition uses local storage. Export a backup before changing signing identities or removing the app.")
-                            .font(.footnote)
-                            .foregroundStyle(Color.kadoForegroundSecondary)
-                    }
-                    .listRowBackground(Color.kadoBackgroundSecondary)
-                    DayStartSection()
-                    WeekStartSection()
-                    AppearanceSection()
-                    NotificationsSection()
-                    ArchivedSection()
-                    backupSection
-                    SupportSection()
-                    DevModeSection()
-                    wordmarkFooter
+            Form {
+                Section("Make it yours") {
+                    NavigationLink { AppearanceView() } label: {
+                        SettingsRow(title: "Appearance", symbol: "paintpalette")
+                            .badge(Text(renderedTheme.name))
+                    }.accessibilityIdentifier(AccessibilityID.Settings.appearanceRow)
+                }.listRowBackground(Color.kadoBackgroundSecondary)
+                Section("Your habits") {
+                    NavigationLink { HabitCalendarSettingsView() } label: {
+                        SettingsRow(title: "Day & week", symbol: "calendar")
+                    }.accessibilityIdentifier("settings.calendar")
+                    NavigationLink { NotificationSettingsView() } label: {
+                        SettingsRow(title: "Notifications", symbol: "bell")
+                    }.accessibilityIdentifier("settings.notifications")
+                }.listRowBackground(Color.kadoBackgroundSecondary)
+                Section {
+                    NavigationLink { ArchivedHabitsView() } label: {
+                        SettingsRow(title: "Archived habits", symbol: "archivebox").badge(archived.count)
+                    }.accessibilityIdentifier(AccessibilityID.Settings.archivedRow)
+                    NavigationLink { RecentlyDeletedView() } label: {
+                        SettingsRow(title: "Recently Deleted", symbol: "trash")
+                            .badge(deleted.filter { $0.expiresAt > .now }.count)
+                    }.accessibilityIdentifier("settings.recentlyDeleted")
+                    NavigationLink { ImportExportSettingsView() } label: {
+                        SettingsRow(title: "Import & export", symbol: "externaldrive")
+                    }.accessibilityIdentifier("settings.importExport")
+                    NavigationLink { PrivacyResetView() } label: {
+                        SettingsRow(title: "Privacy & reset", symbol: "hand.raised")
+                    }.accessibilityIdentifier("settings.privacy")
+                } header: { Text("Your data") }
+                footer: { Text("Saved on this device. You're in control of what stays.") }
+                .listRowBackground(Color.kadoBackgroundSecondary)
+                Section("About") {
+                    NavigationLink {
+                        Form { SupportSection() }
+                            .scrollContentBackground(.hidden).background(Color.kadoBackground)
+                            .navigationTitle("About Tendelm").navigationBarTitleDisplayMode(.inline)
+                    } label: { SettingsRow(title: "About Tendelm", symbol: "info.circle") }
+                    NavigationLink { AdvancedSettingsView() } label: {
+                        SettingsRow(title: "Advanced", symbol: "wrench.and.screwdriver")
+                    }.accessibilityIdentifier("settings.advanced")
+                }.listRowBackground(Color.kadoBackgroundSecondary)
+                Section {} footer: {
+                    Text("Tendelm · room to grow")
+                        .font(.footnote).foregroundStyle(Color.kadoForegroundTertiary)
+                        .frame(maxWidth: .infinity).padding(.vertical, 12)
                 }
-                .scrollContentBackground(.hidden)
-                .background(Color.kadoBackground.ignoresSafeArea())
-                .navigationTitle("Settings")
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.kadoBackground.ignoresSafeArea())
+            .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
-
-    /// Decorative wordmark at the bottom of Settings. Rendered as the
-    /// footer of an empty Section so it sits below every card with
-    /// the same inset as the rest of the Form. `Text(verbatim:)`
-    /// skips the localization path — 稼働 is brand art, not a phrase
-    /// that translates. The accessibilityLabel carries the
-    /// translatable phrasing VoiceOver reads.
-    private var wordmarkFooter: some View {
-        Section {
-            EmptyView()
-        } footer: {
-            Text(verbatim: "Tendelm · room to grow")
-                .font(.system(size: 13, design: .serif))
-                .tracking(2.0)
-                .foregroundStyle(Color.kadoForegroundTertiary)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.vertical, 24)
-                .accessibilityLabel(String(localized: "Tendelm — room to grow"))
-        }
-        .listRowBackground(Color.clear)
-    }
-}
-
-#Preview("Available") {
-    SettingsView()
-        .environment(\.cloudAccountStatus, MockCloudAccountStatusObserver(status: .available))
-}
-
-#Preview("Not signed in") {
-    SettingsView()
-        .environment(\.cloudAccountStatus, MockCloudAccountStatusObserver(status: .noAccount))
-}
-
-#Preview("Dark") {
-    SettingsView()
-        .preferredColorScheme(.dark)
 }

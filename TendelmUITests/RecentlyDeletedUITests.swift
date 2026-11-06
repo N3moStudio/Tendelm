@@ -1,0 +1,142 @@
+import XCTest
+
+final class RecentlyDeletedUITests: TendelmUITestCase {
+    @MainActor
+    func testTodayDeleteAndRestoreSurviveRelaunch() {
+        var app = launchApp(seedProduction: true)
+        waitForTodayRows(in: app)
+        let row = todayRows(in: app).firstMatch
+        let id = habitID(of: row, prefix: "today.row.")
+        row.press(forDuration: 1)
+        assertDeleteOnly(in: app, identifier: "habit.delete")
+        capture(app, "17-habit-delete-menu")
+        app.buttons["habit.delete"].tap()
+        XCTAssertTrue(todayRow(id, in: app).waitForNonExistence(timeout: 5))
+        openSettingsPage("settings.recentlyDeleted", in: app)
+        let restore = prefixedButton("trash.restore.", in: app)
+        XCTAssertTrue(restore.waitForExistence(timeout: 5))
+        capture(app, "18-recently-deleted")
+        app.terminate()
+        app = launchApp(resetState: false)
+        openSettingsPage("settings.recentlyDeleted", in: app)
+        prefixedButton("trash.restore.", in: app).tap()
+        XCTAssertTrue(elements(withIdentifierPrefix: "trash.empty", in: app).firstMatch.waitForExistence(timeout: 5))
+        tapTab(.today, in: app)
+        XCTAssertTrue(todayRow(id, in: app).waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testCardsAndOverviewDeleteSelection() {
+        let app = launchApp(seedProduction: true)
+        waitForTodayRows(in: app)
+        app.buttons["today.layout"].tap()
+        app.buttons["Cards"].tap()
+        let first = todayRows(in: app).firstMatch
+        let firstID = habitID(of: first, prefix: "today.row.")
+        first.press(forDuration: 1)
+        assertDeleteOnly(in: app, identifier: "habit.delete")
+        app.buttons["habit.delete"].tap()
+        XCTAssertTrue(todayRow(firstID, in: app).waitForNonExistence(timeout: 5))
+        tapTab(.overview, in: app)
+        let labels = elements(withIdentifierPrefix: "overview.label.", in: app)
+        let label = labels.firstMatch
+        XCTAssertTrue(label.waitForExistence(timeout: 5), app.debugDescription)
+        let labelID = label.identifier
+        label.press(forDuration: 1)
+        assertDeleteOnly(in: app, identifier: "habit.delete")
+        app.buttons["habit.delete"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)[labelID].firstMatch.waitForNonExistence(timeout: 5))
+        openSettingsPage("settings.recentlyDeleted", in: app)
+        app.buttons["trash.select"].tap()
+        app.buttons["trash.selectAll"].tap()
+        XCTAssertEqual(app.buttons["trash.selectAll"].label, "Deselect All")
+        app.buttons["trash.selectAll"].tap()
+        XCTAssertEqual(app.buttons["trash.deleteSelected"].label, "Delete All")
+        prefixedButton("trash.select.", in: app).tap()
+        XCTAssertEqual(app.buttons["trash.deleteSelected"].label, "Delete (1)")
+        capture(app, "19-recently-deleted-selection")
+        app.buttons["trash.deleteSelected"].tap()
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.buttons["trash.restoreSelected"].exists)
+        app.buttons["trash.deleteSelected"].tap()
+        app.buttons["trash.confirmDelete"].tap()
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'trash.select.'")).count, 1)
+        app.buttons["trash.deleteSelected"].tap()
+        app.buttons["trash.confirmDelete"].tap()
+        XCTAssertTrue(elements(withIdentifierPrefix: "trash.empty", in: app).firstMatch.waitForExistence(timeout: 5))
+        tapTab(.today, in: app)
+        XCTAssertTrue(todayRows(in: app).firstMatch.exists)
+    }
+
+    @MainActor
+    func testTrackerRestoresHistory() {
+        let app = launchApp(seedProduction: true, seedTimeSince: true)
+        tapTab(.timeSince, in: app)
+        let detail = prefixedButton("timeSince.detail.", in: app)
+        XCTAssertTrue(detail.waitForExistence(timeout: 5))
+        let detailID = detail.identifier
+        detail.press(forDuration: 1)
+        assertDeleteOnly(in: app, identifier: "tracker.delete")
+        app.buttons["tracker.delete"].tap()
+        XCTAssertTrue(app.buttons[detailID].waitForNonExistence(timeout: 5))
+        openSettingsPage("settings.recentlyDeleted", in: app)
+        prefixedButton("trash.restore.", in: app).tap()
+        tapTab(.timeSince, in: app)
+        app.buttons[detailID].tap()
+        XCTAssertTrue(app.buttons["timeSince.detail.previous"].waitForExistence(timeout: 5))
+        XCTAssertTrue(elements(withIdentifierPrefix: "timeSince.history.", in: app).firstMatch.exists)
+    }
+
+    @MainActor
+    func testFullEraseCancelThenConfirmAndRelaunch() {
+        var app = launchApp(seedProduction: true, seedTimeSince: true)
+        waitForTodayRows(in: app)
+        todayRows(in: app).firstMatch.press(forDuration: 1)
+        app.buttons["habit.delete"].tap()
+        openSettingsPage("settings.privacy", in: app)
+        scrollTo(app.buttons["settings.erase"], in: app)
+        app.buttons["settings.erase"].tap()
+        app.buttons["Cancel"].tap()
+        tapTab(.today, in: app)
+        XCTAssertTrue(todayRows(in: app).firstMatch.exists)
+        tapTab(.settings, in: app)
+        app.buttons["settings.erase"].tap()
+        app.buttons["settings.eraseConfirm"].tap()
+        XCTAssertTrue(app.buttons["settings.eraseConfirm"].waitForNonExistence(timeout: 5))
+        tapTab(.today, in: app)
+        XCTAssertEqual(todayRows(in: app).count, 0)
+        tapTab(.timeSince, in: app)
+        XCTAssertTrue(app.buttons["Start a tracker"].waitForExistence(timeout: 5))
+        openSettingsPage("settings.recentlyDeleted", in: app)
+        XCTAssertTrue(elements(withIdentifierPrefix: "trash.empty", in: app).firstMatch.waitForExistence(timeout: 5))
+        app.terminate()
+        app = launchApp(resetState: false)
+        XCTAssertEqual(todayRows(in: app).count, 0)
+        tapTab(.timeSince, in: app)
+        XCTAssertTrue(app.buttons["Start a tracker"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testGroupedSettingsAtLargeText() {
+        let app = launchApp(seedProduction: true, contentSize: "UICTContentSizeCategoryAccessibilityXXXL")
+        tapTab(.settings, in: app)
+        capture(app, "20-grouped-settings-large-text")
+        scrollTo(app.buttons["settings.importExport"], in: app)
+        app.buttons["settings.importExport"].tap()
+        XCTAssertTrue(app.buttons["backup.paste"].waitForExistence(timeout: 5))
+        capture(app, "21-import-settings-large-text")
+        XCTAssertTrue(app.links["json.site"].exists)
+    }
+
+    @MainActor
+    private func assertDeleteOnly(in app: XCUIApplication, identifier: String) {
+        XCTAssertTrue(app.buttons[identifier].waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertFalse(app.buttons["Edit"].isHittable)
+        XCTAssertFalse(app.buttons["Archive"].isHittable)
+    }
+
+    @MainActor
+    private func prefixedButton(_ prefix: String, in app: XCUIApplication) -> XCUIElement {
+        app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", prefix)).firstMatch
+    }
+}

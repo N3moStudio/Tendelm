@@ -29,7 +29,7 @@ final class DayStartPickerTests: TendelmUITestCase {
     @MainActor
     func testAnAfternoonHourCanBeChosen() {
         let app = launchApp()
-        tapTab(.settings, in: app)
+        openSettingsPage("settings.calendar", in: app)
 
         let picker = app.descendants(matching: .any)[AccessibilityID.Settings.dayStartPicker].firstMatch
         XCTAssertTrue(picker.waitForExistence(timeout: 10), "Settings should show the Day starts at picker.")

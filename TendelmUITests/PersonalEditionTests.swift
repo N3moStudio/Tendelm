@@ -41,7 +41,7 @@ final class PersonalEditionTests: TendelmUITestCase {
     @MainActor
     func testExternalImportEntryAndHelp() {
         let app = launchApp()
-        tapTab(.settings, in: app)
+        openImportSettings(in: app)
         let entry = app.buttons["externalImport.open"]
         for _ in 0..<5 {
             if entry.isHittable { break }

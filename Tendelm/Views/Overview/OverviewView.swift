@@ -41,6 +41,7 @@ struct OverviewView: View {
 
     @State private var selection: CellSelection?
     @State private var showingNewHabit = false
+    @State private var deletionError: String?
     /// The latest popover step, for the haptic — recorded at the
     /// mutation site, as on the detail screen.
     @State private var quickLog: QuickLogEvent?
@@ -48,7 +49,7 @@ struct OverviewView: View {
     private static let dayWindow = 30
     private static let cellSize: CGFloat = 36
     private static let cellSpacing: CGFloat = 6
-    private static let labelHeight: CGFloat = 28
+    private static let labelHeight: CGFloat = 44
     private static let labelBottomPadding: CGFloat = 8
     private static let rowGap: CGFloat = 12
     private static let headerHeight: CGFloat = 40
@@ -67,6 +68,9 @@ struct OverviewView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color.kadoBackground.ignoresSafeArea())
                 .navigationTitle("Overview")
+                .alert("Couldn't delete habit", isPresented: Binding(get: { deletionError != nil }, set: { if !$0 { deletionError = nil } })) {
+                    Button("OK", role: .cancel) {}
+                } message: { Text(deletionError ?? "") }
                 .sheet(isPresented: $showingNewHabit) {
                     NewHabitFormView(model: NewHabitFormModel())
                 }
@@ -197,6 +201,7 @@ struct OverviewView: View {
             // Match the date-header row + its trailing gap so the first
             // label lands in the first habit's spacer slot.
             Color.clear.frame(height: Self.headerHeight + Self.rowGap)
+                .allowsHitTesting(false)
 
             ForEach(rows, id: \.habit.id) { row in
                 HStack(spacing: 8) {
@@ -221,18 +226,33 @@ struct OverviewView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .frame(height: Self.labelHeight)
+                .contentShape(Rectangle())
+                .contextMenu {
+                    Button("Delete", systemImage: "trash", role: .destructive) { moveToRecentlyDeleted(row.habit.id) }
+                        .accessibilityIdentifier("habit.delete")
+                }
+                .accessibilityAction(named: "Delete") { moveToRecentlyDeleted(row.habit.id) }
 
                 // Spacer for the breathing room below the name + the
                 // cell row itself, so the next label lines up with the
                 // next habit's spacer slot.
                 Color.clear.frame(height: Self.labelBottomPadding + Self.cellSize)
+                    .allowsHitTesting(false)
                 if row.habit.id != rows.last?.habit.id {
                     Color.clear.frame(height: Self.rowGap)
+                        .allowsHitTesting(false)
                 }
             }
         }
         .padding(.horizontal, 16)
-        .allowsHitTesting(false)
+    }
+
+    private func moveToRecentlyDeleted(_ id: UUID) {
+        do {
+            selection = nil
+            try RecentlyDeletedStore().moveHabit(id: id, in: modelContext)
+            WidgetReloader.reloadAll(using: modelContext)
+        } catch { deletionError = error.localizedDescription }
     }
 
     private func cellRow(_ row: MatrixRow, days: [Date], completions: [Completion]) -> some View {

@@ -56,6 +56,7 @@ struct HabitDetailView: View {
     @State private var showingEdit = false
     @State private var showingArchiveConfirmation = false
     @State private var showingDeleteConfirmation = false
+    @State private var deletionError: String?
     @State private var showingTimerSheet = false
     @State private var showingScoreInfo = false
     @State private var editingDay: Date? = nil
@@ -179,6 +180,10 @@ struct HabitDetailView: View {
                         showingArchiveConfirmation = true
                     }
                 }
+                ToolbarItem(placement: .secondaryAction) {
+                    Button("Delete", systemImage: "trash", role: .destructive) { showingDeleteConfirmation = true }
+                        .accessibilityIdentifier(AccessibilityID.HabitDetail.deleteButton)
+                }
             }
         }
         .sheet(isPresented: $showingEdit) {
@@ -218,8 +223,11 @@ struct HabitDetailView: View {
             .accessibilityIdentifier(AccessibilityID.HabitDetail.deleteConfirmButton)
             Button(String(localized: "Cancel"), role: .cancel) {}
         } message: {
-            Text("This permanently deletes the habit and all of its history. This can’t be undone.")
+            Text("The habit and its history will stay in Recently Deleted for 30 days.")
         }
+        .alert("Couldn't delete habit", isPresented: Binding(get: { deletionError != nil }, set: { if !$0 { deletionError = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: { Text(deletionError ?? "") }
     }
 
     /// The instant to stamp on anything logged right now — see the
@@ -248,9 +256,11 @@ struct HabitDetailView: View {
     /// exists and swap this screen for `HabitUnavailableView`.
     private func delete() {
         guard let record else { return }
-        HabitLifecycle().delete(record, in: modelContext)
-        WidgetReloader.reloadAll(using: modelContext)
-        dismiss()
+        do {
+            try RecentlyDeletedStore().moveHabit(id: record.id, in: modelContext)
+            WidgetReloader.reloadAll(using: modelContext)
+            dismiss()
+        } catch { deletionError = error.localizedDescription }
     }
 
     // MARK: - Quick-log

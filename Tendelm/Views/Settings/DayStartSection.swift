@@ -56,8 +56,8 @@ private struct DayStartPicker: View {
     /// what it does.
     private var footer: LocalizedStringKey {
         hour == DayStartDefaults.defaultHour
-            ? "The day rolls over at midnight. Pick a different hour if your day doesn't start there — in the small hours if you're up past midnight, or in the afternoon if you work nights."
-            : "Until this hour, Today still shows the previous day — so a tap before then lands where you expect. Reminders keep their own times, and changing this never moves a completion you've already logged."
+            ? "Choose when a new day starts. Midnight is the default."
+            : "Before this hour, Today shows the previous day. Existing history and reminder times stay the same."
     }
 
 }

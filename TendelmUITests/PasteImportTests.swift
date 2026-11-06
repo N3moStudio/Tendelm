@@ -7,7 +7,7 @@ final class PasteImportTests: TendelmUITestCase {
     @MainActor
     func testBackupPasteCancelImportAndRelaunch() {
         var app = launchApp(clipboardText: backupJSON)
-        tapTab(.settings, in: app)
+        openImportSettings(in: app)
         reveal(app.buttons["backup.paste"], in: app)
         app.buttons["backup.paste"].tap()
         let confirm = app.buttons["backup.review.confirm"]
@@ -16,7 +16,7 @@ final class PasteImportTests: TendelmUITestCase {
         app.buttons["backup.review.cancel"].tap()
         tapTab(.timeSince, in: app)
         XCTAssertTrue(app.buttons["Start a tracker"].waitForExistence(timeout: 5))
-        tapTab(.settings, in: app)
+        openImportSettings(in: app)
         reveal(app.buttons["backup.paste"], in: app)
         app.buttons["backup.paste"].tap()
         XCTAssertTrue(confirm.waitForExistence(timeout: 5))
@@ -75,8 +75,8 @@ final class PasteImportTests: TendelmUITestCase {
     @MainActor
     func testJSONHelperReturnsToPasteWithoutImporting() {
         let app = launchApp(clipboardText: backupJSON)
-        tapTab(.settings, in: app)
-        let helper = app.buttons["backup.helper"]
+        openImportSettings(in: app)
+        let helper = app.links["json.site"].firstMatch
         reveal(helper, in: app)
         capture(app, "16-backup-paste-and-helper")
         helper.tap()
@@ -93,7 +93,7 @@ final class PasteImportTests: TendelmUITestCase {
 
     @MainActor
     private func openHistory(in app: XCUIApplication) {
-        tapTab(.settings, in: app)
+        openImportSettings(in: app)
         let entry = app.buttons["externalImport.open"]
         reveal(entry, in: app)
         entry.tap()

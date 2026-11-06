@@ -103,7 +103,7 @@ final class DevModeSwapTests: TendelmUITestCase {
     /// itself, which rebuilds a container and can take a moment.
     @MainActor
     private func toggleDevModeOff(in app: XCUIApplication) {
-        tapTab(.settings, in: app)
+        openSettingsPage("settings.advanced", in: app)
 
         // Developer is the last section in Settings, so it starts below
         // the fold and is not in the hierarchy at all until scrolled to.

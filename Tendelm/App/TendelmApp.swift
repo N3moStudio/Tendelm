@@ -1,6 +1,7 @@
 import OSLog
 import SwiftData
 import SwiftUI
+import UserNotifications
 import TendelmCore
 
 @main
@@ -17,6 +18,7 @@ struct TendelmApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     @State private var devModeController = DevModeController()
+    @State private var resetIdentity = UUID()
     @State private var cloudAccountStatus: any CloudAccountStatusObserving = Self.makeCloudAccountStatus()
     @State private var notificationScheduler: any NotificationScheduling
     @State private var notificationManager: NotificationManager
@@ -149,6 +151,7 @@ struct TendelmApp: App {
 
         return WindowGroup {
             rootView
+                .id(resetIdentity)
                 .preferredColorScheme(appearance.colorScheme)
                 .task { await cloudAccountStatus.refresh() }
                 // A refund granted while the app was closed arrives as a
@@ -160,6 +163,7 @@ struct TendelmApp: App {
                     // launch so widgets have fresh data even if the
                     // user hasn't mutated anything since install.
                     WidgetSnapshotBuilder.rebuildAndWrite(using: container.mainContext)
+                    try? RecentlyDeletedStore().prune(in: container.mainContext)
                 }
                 .task {
                     await notificationManager.configure()
@@ -184,6 +188,18 @@ struct TendelmApp: App {
                 #endif
         }
         .modelContainer(container)
+        .environment(\.eraseAllTendelmData, {
+            let production = try devModeController.eraseAllRecords()
+            UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+            UNUserNotificationCenter.current().removeAllDeliveredNotifications()
+            WidgetReloader.reloadAll(using: production.mainContext)
+            do { try AppDataReset.clearCachedFiles() }
+            catch { throw AppDataReset.Failure.cleanup }
+            AppDataReset.clearPreferences(in: [.standard, DevModeDefaults.sharedDefaults,
+                DayStartDefaults.sharedDefaults, WeekStartDefaults.sharedDefaults,
+                HabitThemeDefaults.sharedDefaults, SupporterDefaults.sharedDefaults])
+            resetIdentity = UUID()
+        })
         .environment(\.cloudAccountStatus, cloudAccountStatus)
         .environment(\.notificationScheduler, notificationScheduler)
         .environment(\.tipJarStore, tipJarStore)
@@ -205,6 +221,7 @@ struct TendelmApp: App {
             // and cases where a background reminder fired while
             // the app was suspended.
             guard newPhase == .active else { return }
+            try? RecentlyDeletedStore().prune(in: container.mainContext)
             reconcileAppIcon()
             guard !boundary.isDate(clockMark, inSameDayAs: .now) else {
                 RemindersSync.rescheduleAll(using: container.mainContext)

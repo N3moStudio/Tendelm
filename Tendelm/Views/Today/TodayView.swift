@@ -48,6 +48,7 @@ struct TodayView: View {
     @State private var selectedHabitID: UUID?
     @State private var sheet: TodaySheet?
     @State private var confirmingArchiveOf: UUID?
+    @State private var deletionError: String?
     /// The latest `−` / `+` / `+5m` tap, for the haptic. Recorded by
     /// the mutation rather than observed on the row: a row keyed on
     /// its own value ticks when the day rolls over or a sync lands,
@@ -103,6 +104,9 @@ struct TodayView: View {
             }
         }
         .onAppear(perform: refreshCard)
+        .alert("Couldn't delete habit", isPresented: Binding(get: { deletionError != nil }, set: { if !$0 { deletionError = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: { Text(deletionError ?? "") }
         // Re-asked after every sheet, because two of them retire a
         // card: a tip taken in the Tip Jar retires the nudge, opening
         // Appearance retires the announcement, and Today is already on
@@ -318,7 +322,7 @@ struct TodayView: View {
                         Text("Not scheduled today")
                             .foregroundStyle(Color.kadoForegroundSecondary)
                     } footer: {
-                        Text("Tap to open detail, or long-press to edit or archive.")
+                        Text("Tap for details. Hold a habit to move it to Recently Deleted.")
                             .foregroundStyle(Color.kadoForegroundSecondary)
                     }
                 }
@@ -380,7 +384,8 @@ struct TodayView: View {
             onLogSpecificValue: logSheetCallback(for: item),
             onOpenDetail: { openDetail(item.id) },
             onEdit: { sheet = .editHabit(item.id) },
-            onArchive: { confirmingArchiveOf = item.id }
+            onArchive: { confirmingArchiveOf = item.id },
+            onDelete: { moveToRecentlyDeleted(item.id) }
         )
         Group {
             if usesSplitLayout {
@@ -416,6 +421,11 @@ struct TodayView: View {
             }
         }
         .padding(.vertical, todayLayout == "cards" ? 8 : 0)
+        .contentShape(Rectangle())
+        .contextMenu {
+            Button("Delete", systemImage: "trash", role: .destructive) { moveToRecentlyDeleted(item.id) }
+                .accessibilityIdentifier("habit.delete")
+        }
     }
 
     /// The two Today sections, snapshotted from the live records.
@@ -646,6 +656,13 @@ struct TodayView: View {
         guard let record = record(for: habitID) else { return }
         HabitLifecycle().archive(record, at: loggingInstant, in: modelContext)
         WidgetReloader.reloadAll(using: modelContext)
+    }
+
+    private func moveToRecentlyDeleted(_ id: UUID) {
+        do {
+            try RecentlyDeletedStore().moveHabit(id: id, in: modelContext)
+            WidgetReloader.reloadAll(using: modelContext)
+        } catch { deletionError = error.localizedDescription }
     }
 }
 
