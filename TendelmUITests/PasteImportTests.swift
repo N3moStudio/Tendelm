@@ -115,11 +115,4 @@ final class PasteImportTests: TendelmUITestCase {
         XCTAssertTrue(element.isHittable, app.debugDescription)
     }
 
-    @MainActor
-    private func capture(_ app: XCUIApplication, _ name: String) {
-        let attachment = XCTAttachment(screenshot: app.screenshot())
-        attachment.name = name
-        attachment.lifetime = .keepAlways
-        add(attachment)
-    }
 }
