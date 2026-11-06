@@ -4,8 +4,8 @@ import UniformTypeIdentifiers
 import TendelmCore
 
 /// Settings section that wires the JSON round-trip: export the full
-/// store as a `.json` file via the share sheet, import one via the
-/// system file picker. Attaches as a regular `Form` section between
+/// store as a `.json` file via the share sheet, import a file or pasted
+/// contents through the same review. Attaches as a regular `Form` section between
 /// Notifications and Dev Mode.
 struct BackupSection: View {
     @Environment(\.modelContext) private var modelContext
@@ -55,7 +55,17 @@ struct BackupSection: View {
             } label: {
                 Label("Import Data", systemImage: "square.and.arrow.down")
             }
-            .disabled(isExporting)
+            .disabled(isExporting || presentedSheet != nil || isShowingImporter)
+            .accessibilityIdentifier("backup.importFile")
+            HStack {
+                Label("Paste backup text", systemImage: "doc.on.clipboard")
+                Spacer(minLength: 8)
+                PasteButton(payloadType: String.self, onPaste: handlePastedText)
+                    .labelStyle(.titleOnly)
+                    .accessibilityLabel("Paste backup text")
+                    .accessibilityIdentifier("backup.paste")
+                    .disabled(isExporting || presentedSheet != nil || isShowingImporter)
+            }
             NavigationLink {
                 ExternalImportView()
             } label: {
@@ -66,6 +76,14 @@ struct BackupSection: View {
         } header: {
             Text("Data")
                 .foregroundStyle(Color.kadoForegroundSecondary)
+        } footer: {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Files won't open? Open json.site, choose your JSON backup and copy its contents. Tap Done, then Paste backup text here.")
+                Button("Open json.site") { presentedSheet = .helper(.json) }
+                    .accessibilityIdentifier("backup.helper")
+                    .disabled(isExporting || presentedSheet != nil || isShowingImporter)
+                Text("Nothing is sent automatically. You'll review the backup before importing.")
+            }
         }
         .listRowBackground(Color.kadoBackgroundSecondary)
         .onDisappear { exportTask?.cancel() }
@@ -77,6 +95,8 @@ struct BackupSection: View {
         }
         .sheet(item: $presentedSheet) { sheet in
             switch sheet {
+            case .helper(let site):
+                ImportHelperBrowser(site: site)
             case .share(let url):
                 ShareSheet(activityItems: [url])
                     .ignoresSafeArea()
@@ -145,6 +165,30 @@ struct BackupSection: View {
 
     // MARK: - Import
 
+    private func handlePastedText(_ strings: [String]) {
+        guard !isExporting, presentedSheet == nil, !isShowingImporter else { return }
+        do {
+            let data = try ImportTextInput.data(from: strings)
+            prepareImport(data, format: BackupFormat.sniff(data))
+        } catch { presentedAlert = .pasteFailed(error.localizedDescription) }
+    }
+
+    private func prepareImport(_ data: Data, format: BackupFormat) {
+        do {
+            let document: BackupDocument
+            switch format {
+            case .json: document = try importer.parse(data: data)
+            case .csv: document = try CSVBackupCoder().decode(data)
+            }
+            let summary = try importer.summary(for: document, in: modelContext)
+            presentedSheet = .confirmImport(document: document, summary: summary)
+        } catch BackupError.invalidJSON { presentedAlert = .importFailed(.invalidJSON) }
+        catch BackupError.invalidCSV { presentedAlert = .importFailed(.invalidCSV) }
+        catch BackupError.malformedRow(let line) { presentedAlert = .importFailed(.malformedRow(line: line)) }
+        catch BackupError.unsupportedVersion { presentedAlert = .importFailed(.unsupportedVersion) }
+        catch { presentedAlert = .importFailed(.readFailed) }
+    }
+
     private func handleFileImport(_ result: Result<URL, Error>) {
         switch result {
         case .failure:
@@ -166,27 +210,7 @@ struct BackupSection: View {
             let format = BackupFormat.detect(pathExtension: url.pathExtension)
                 ?? BackupFormat.sniff(data)
 
-            do {
-                let document: BackupDocument
-                switch format {
-                case .json:
-                    document = try importer.parse(data: data)
-                case .csv:
-                    document = try CSVBackupCoder().decode(data)
-                }
-                let summary = try importer.summary(for: document, in: modelContext)
-                presentedSheet = .confirmImport(document: document, summary: summary)
-            } catch BackupError.invalidJSON {
-                presentedAlert = .importFailed(.invalidJSON)
-            } catch BackupError.invalidCSV {
-                presentedAlert = .importFailed(.invalidCSV)
-            } catch BackupError.malformedRow(let line) {
-                presentedAlert = .importFailed(.malformedRow(line: line))
-            } catch BackupError.unsupportedVersion {
-                presentedAlert = .importFailed(.unsupportedVersion)
-            } catch {
-                presentedAlert = .importFailed(.readFailed)
-            }
+            prepareImport(data, format: format)
         }
     }
 
@@ -240,9 +264,11 @@ private struct ImportConfirmSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel", action: onCancel)
+                        .accessibilityIdentifier("backup.review.cancel")
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Import", action: onConfirm)
+                        .accessibilityIdentifier("backup.review.confirm")
                 }
             }
         }
@@ -264,11 +290,13 @@ private struct ImportConfirmSheet: View {
 
 /// Every sheet this section can present, in one slot.
 private enum PresentedSheet: Identifiable {
+    case helper(ImportHelperSite)
     case share(URL)
     case confirmImport(document: BackupDocument, summary: ImportSummary)
 
     var id: String {
         switch self {
+        case .helper(let site): return "helper-\(site.rawValue)"
         case .share(let url): return "share-\(url.absoluteString)"
         case .confirmImport: return "confirmImport"
         }
@@ -277,12 +305,14 @@ private enum PresentedSheet: Identifiable {
 
 /// Every alert this section can present, in one slot.
 private enum PresentedAlert: Identifiable {
+    case pasteFailed(String)
     case exportFailed(String)
     case importFailed(ImportFailure)
     case importSucceeded(ImportSummary)
 
     var id: String {
         switch self {
+        case .pasteFailed: return "pasteFailed"
         case .exportFailed: return "exportFailed"
         case .importFailed(let failure): return "importFailed-\(failure.id)"
         case .importSucceeded: return "importSucceeded"
@@ -291,6 +321,7 @@ private enum PresentedAlert: Identifiable {
 
     var title: LocalizedStringKey {
         switch self {
+        case .pasteFailed: return "Couldn't read pasted text"
         case .exportFailed: return "Export failed"
         case .importFailed(let failure): return failure.title
         case .importSucceeded: return "Import complete"
@@ -302,6 +333,7 @@ private enum PresentedAlert: Identifiable {
     /// while the fixed strings stay on the localized path.
     var message: Text {
         switch self {
+        case .pasteFailed(let message): return Text(message)
         case .exportFailed(let description):
             return Text(description)
         case .importFailed(let failure):

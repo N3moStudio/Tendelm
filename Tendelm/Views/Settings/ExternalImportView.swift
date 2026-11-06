@@ -7,6 +7,7 @@ struct ExternalImportView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.calendar) private var calendar
     @State private var showsPicker = false
+    @State private var helper: ImportHelperSite?
     @State private var isReading = false
     @State private var readTask: Task<Void, Never>?
     @State private var pendingData: Data?
@@ -21,14 +22,29 @@ struct ExternalImportView: View {
             Section {
                 Text("Bring your history with you")
                     .font(.headline)
-                Text("Choose a daily CSV from Streaks or Habitify. You'll see a preview before anything is added.")
+                Text("Choose or paste a daily export from Streaks or Habitify. You'll see a preview before anything is added.")
                     .foregroundStyle(Color.kadoForegroundSecondary)
                 Button("Choose a file", systemImage: "doc") { showsPicker = true }
-                    .disabled(isReading)
+                    .disabled(isReading || helper != nil)
                     .accessibilityIdentifier("externalImport.choose")
+                HStack {
+                    Label("Paste history text", systemImage: "doc.on.clipboard")
+                    Spacer(minLength: 8)
+                    PasteButton(payloadType: String.self, onPaste: paste)
+                        .labelStyle(.titleOnly)
+                        .accessibilityLabel("Paste history text")
+                        .accessibilityIdentifier("externalImport.paste")
+                        .disabled(isReading || showsPicker || helper != nil)
+                }
                 if isReading { TendelmProgressLabel(title: "Reading your history…") }
             } footer: {
-                Text("Your file is read on this device.")
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Files won't open? Open the helper, choose your CSV and copy the JSON output. Tap Done, then Paste here. Raw CSV text works too.")
+                    Button("Open CSV helper") { helper = .csv }
+                        .accessibilityIdentifier("externalImport.helper")
+                        .disabled(isReading || showsPicker || helper != nil)
+                    Text("Tendelm sends nothing to the helper. Pasting only prepares a preview.")
+                }
             }
             .listRowBackground(Color.kadoBackgroundSecondary)
 
@@ -51,7 +67,7 @@ struct ExternalImportView: View {
                     if summary.existingDays > 0 {
                         LabeledContent("Days already in Tendelm", value: "\(summary.existingDays)")
                     }
-                    DisclosureGroup("Habits in this file") {
+                    DisclosureGroup("Habits in this export") {
                         ForEach(document.habits, id: \.id) { habit in
                             LabeledContent(habit.name, value: "\(habit.completions.count) days")
                         }
@@ -84,13 +100,13 @@ struct ExternalImportView: View {
 
             Section("Get your export") {
                 DisclosureGroup("Streaks") {
-                    Text("Settings → Manage Data → Export Data → Tasks → CSV. Save to Files, then choose it here.")
+                    Text("Settings → Manage Data → Export Data → Tasks → CSV. Save it, then choose the file here or open it in the CSV helper and paste its JSON output.")
                     Text("Manual completions, misses and skips are supported. Other entry types need a simple CSV conversion first.")
                         .font(.footnote).foregroundStyle(Color.kadoForegroundSecondary)
                     Link("Streaks export help", destination: URL(string: "https://streaks.app/help/export-task-data/")!)
                 }
                 DisclosureGroup("Habitify") {
-                    Text("Settings → Import / Export → Export as .csv. Save to Files, then choose it here.")
+                    Text("Settings → Import / Export → Export as .csv. Save it, then choose the file here or use the CSV helper and paste its JSON output.")
                     Link("Habitify export help", destination: URL(string: "https://intercom.help/habitify-app/en/articles/10501738-how-to-export-data-of-habitify-account")!)
                 }
                 DisclosureGroup("Another app?") {
@@ -107,7 +123,8 @@ struct ExternalImportView: View {
         .background(Color.kadoBackground)
         .navigationTitle("Import history")
         .navigationBarTitleDisplayMode(.inline)
-        .fileImporter(isPresented: $showsPicker, allowedContentTypes: [.commaSeparatedText, .plainText]) { result in
+        .sheet(item: $helper) { ImportHelperBrowser(site: $0) }
+        .fileImporter(isPresented: $showsPicker, allowedContentTypes: [.commaSeparatedText, .plainText, .json]) { result in
             switch result {
             case .success(let url): load(url)
             case .failure(let error):
@@ -118,6 +135,25 @@ struct ExternalImportView: View {
             Button("OK", role: .cancel) {}
         } message: { Text(message ?? "") }
         .onDisappear { readTask?.cancel() }
+    }
+
+    private func paste(_ strings: [String]) {
+        guard !isReading, !showsPicker, helper == nil else { return }
+        do {
+            let data = try ImportTextInput.data(from: strings)
+            readTask?.cancel()
+            clearPreview()
+            isReading = true
+            readTask = Task {
+                defer { isReading = false }
+                do {
+                    pendingData = data
+                    try await prepare(data, order: .automatic)
+                } catch is CancellationError { return }
+                catch ExternalImportError.needsDateOrder { needsDateOrder = true }
+                catch { pendingData = nil; showError(error) }
+            }
+        } catch { showError(error) }
     }
 
     private func load(_ url: URL) {

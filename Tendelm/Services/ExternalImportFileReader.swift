@@ -26,7 +26,7 @@ enum ExternalImportFileReader {
     @concurrent
     nonisolated static func parse(_ data: Data, dateOrder: ImportDateOrder, calendar: Calendar) async throws -> ExternalHabitImport {
         try Task.checkCancellation()
-        let value = try ExternalHabitCSV.parse(data, calendar: calendar, dateOrder: dateOrder)
+        let value = try ExternalHabitText.parse(data, calendar: calendar, dateOrder: dateOrder)
         try Task.checkCancellation()
         return value
     }

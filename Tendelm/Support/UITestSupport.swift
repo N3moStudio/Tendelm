@@ -1,5 +1,6 @@
 #if DEBUG
 import Foundation
+import UIKit
 import SwiftData
 import TendelmCore
 
@@ -142,8 +143,13 @@ nonisolated enum UITestSupport {
 
     /// Call before anything opens a `ModelContainer` or reads the
     /// dev-mode flag.
-    static func applyLaunchArguments() {
+    @MainActor static func applyLaunchArguments() {
         guard isRunningUITests else { return }
+        // Synthetic clipboard input for native PasteButton UI tests only.
+        // This entire implementation is excluded from Release builds.
+        if let text = ProcessInfo.processInfo.environment["TENDELM_UI_TEST_CLIPBOARD"] {
+            UIPasteboard.general.string = text
+        }
         let arguments = ProcessInfo.processInfo.arguments
         if arguments.contains(Argument.resetState) {
             resetState()

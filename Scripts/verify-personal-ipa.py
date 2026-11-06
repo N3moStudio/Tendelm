@@ -17,8 +17,8 @@ def inspect(path: Path) -> dict:
         info = plistlib.loads(archive.read(root + "Info.plist"))
         assert info["CFBundleIdentifier"] == "com.n3mostudio.tendelm"
         assert info["CFBundleDisplayName"] == "Tendelm"
-        assert info["CFBundleShortVersionString"] == "1.0.3"
-        assert info["CFBundleVersion"] == "4"
+        assert info["CFBundleShortVersionString"] == "1.0.4"
+        assert info["CFBundleVersion"] == "5"
         assert info["CFBundleSupportedPlatforms"] == ["iPhoneOS"]
         assert set(info["UIDeviceFamily"]) == {1, 2}
         assert not any(".xctest/" in n or "embedded.mobileprovision" in n for n in names)

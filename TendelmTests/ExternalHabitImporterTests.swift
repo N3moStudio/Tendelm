@@ -20,6 +20,21 @@ struct ExternalHabitImporterTests {
         try ExternalHabitCSV.parse(Data(("Habit,Date,Status,Habit ID\n" + rows).utf8), calendar: calendar)
     }
 
+    @Test("Pasted helper JSON previews without writes and repeat import adds nothing")
+    func pastedJSONRoundTrip() throws {
+        let text = #"[{"habit":"Read","date":"2025-01-01","status":"completed","habit_id":"read"}]"#
+        let document = try ExternalHabitText.parse(ImportTextInput.data(from: [text]), calendar: calendar)
+        let context = container.mainContext
+        let importer = ExternalHabitImporter()
+        #expect(try importer.summary(for: document, in: context, calendar: calendar).newDays == 1)
+        #expect(try context.fetchCount(FetchDescriptor<HabitRecord>()) == 0)
+        #expect(!context.hasChanges)
+        #expect(try importer.apply(document, to: context, calendar: calendar).newDays == 1)
+        #expect(try !importer.apply(document, to: context, calendar: calendar).hasAdditions)
+        let fresh = ModelContext(container)
+        #expect(try fresh.fetchCount(FetchDescriptor<CompletionRecord>()) == 1)
+    }
+
     @Test("Preview is read-only; importing twice adds no duplicate habits or days")
     func repeatedImport() throws {
         let doc = try document("Read,2025-01-01,Completed,a\nRead,2025-01-02,Skipped,a")

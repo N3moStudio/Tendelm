@@ -74,9 +74,11 @@ class TendelmUITestCase: XCTestCase {
         iCloudAvailable: Bool = false,
         seedTimeSince: Bool = false,
         contentSize: String? = nil,
-        scheduledStartOffset: TimeInterval? = nil
+        scheduledStartOffset: TimeInterval? = nil,
+        clipboardText: String? = nil
     ) -> XCUIApplication {
         let app = XCUIApplication()
+        if let clipboardText { app.launchEnvironment["TENDELM_UI_TEST_CLIPBOARD"] = clipboardText }
         app.launchArguments = ["-uiTestRun"]
         if let scheduledStartOffset { app.launchArguments += ["-uiTestScheduledStartOffset", String(scheduledStartOffset)] }
         if seedTimeSince { app.launchArguments.append("-uiTestSeedTimeSince") }
