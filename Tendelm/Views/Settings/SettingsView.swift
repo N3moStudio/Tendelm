@@ -12,8 +12,7 @@ struct SettingsView: View {
             Form {
                 Section("Make it yours") {
                     NavigationLink { AppearanceView() } label: {
-                        SettingsRow(title: "Appearance", symbol: "paintpalette")
-                            .badge(Text(renderedTheme.name))
+                        SettingsRow(title: "Appearance", symbol: "paintpalette", subtitle: renderedTheme.name)
                     }.accessibilityIdentifier(AccessibilityID.Settings.appearanceRow)
                 }.listRowBackground(Color.kadoBackgroundSecondary)
                 Section("Your habits") {
@@ -26,11 +25,10 @@ struct SettingsView: View {
                 }.listRowBackground(Color.kadoBackgroundSecondary)
                 Section {
                     NavigationLink { ArchivedHabitsView() } label: {
-                        SettingsRow(title: "Archived habits", symbol: "archivebox").badge(archived.count)
+                        SettingsRow(title: "Archived habits", symbol: "archivebox", subtitle: archived.isEmpty ? nil : "\(archived.count) saved")
                     }.accessibilityIdentifier(AccessibilityID.Settings.archivedRow)
                     NavigationLink { RecentlyDeletedView() } label: {
-                        SettingsRow(title: "Recently Deleted", symbol: "trash")
-                            .badge(deleted.filter { $0.expiresAt > .now }.count)
+                        SettingsRow(title: "Recently Deleted", symbol: "trash", subtitle: deleted.isEmpty ? nil : "\(deleted.filter { $0.expiresAt > .now }.count) items")
                     }.accessibilityIdentifier("settings.recentlyDeleted")
                     NavigationLink { ImportExportSettingsView() } label: {
                         SettingsRow(title: "Import & export", symbol: "externaldrive")

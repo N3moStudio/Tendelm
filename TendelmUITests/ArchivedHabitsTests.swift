@@ -2,7 +2,7 @@ import XCTest
 
 /// The archive's round trip, end to end (issue #99): a habit archived
 /// from Today shows up under Settings › Archived habits, and from
-/// there it can be put back or deleted for good.
+/// there it can be put back or moved to Recently Deleted.
 ///
 /// Every action here is a gesture wired for the first time — a swipe
 /// on a `List` row, a long-press menu, a toolbar button behind a
@@ -12,12 +12,8 @@ import XCTest
 /// run, so each test reads the id off a row and follows that one habit
 /// from screen to screen.
 ///
-/// Only the first test archives through Today's long-press menu.
-/// XCUITest waits a full minute for the app to idle after that
-/// long-press and another after the tap in the menu — the context menu
-/// never reports its animations complete — so the path is driven once
-/// and the other tests launch with a habit already archived
-/// (`archiveFirstHabit`).
+/// The first test archives from the detail screen. Other tests start with
+/// an archived habit so they can focus on recovery actions.
 final class ArchivedHabitsTests: TendelmUITestCase {
 
     @MainActor
@@ -130,7 +126,7 @@ final class ArchivedHabitsTests: TendelmUITestCase {
 
     // MARK: - Steps
 
-    /// Archives Today's first row through its long-press menu and the
+    /// Archives Today's first row through its detail screen and the
     /// confirmation, and returns the habit's id.
     @MainActor
     private func archiveFirstTodayRow(in app: XCUIApplication) -> UUID {

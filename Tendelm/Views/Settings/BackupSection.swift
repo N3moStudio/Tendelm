@@ -13,6 +13,7 @@ struct BackupSettingsContainer<Content: View>: View {
     init(@ViewBuilder content: @escaping (AnyView) -> Content) {
         self.content = content
     }
+    @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.modelContext) private var modelContext
     @Environment(\.backupExporter) private var exporter
     @Environment(\.backupImporter) private var importer
@@ -77,10 +78,12 @@ struct BackupSettingsContainer<Content: View>: View {
                 }
                 .disabled(isExporting || presentedSheet != nil || isShowingImporter)
                 .accessibilityIdentifier("backup.importFile")
-                HStack(spacing: 12) {
-                    SettingsIcon(symbol: "doc.on.clipboard")
-                    Text("Paste backup text")
-                    Spacer(minLength: 8)
+                let pasteLayout = typeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+                    : AnyLayout(HStackLayout(spacing: 12))
+                pasteLayout {
+                    SettingsRow(title: "Paste backup text", symbol: "doc.on.clipboard")
+                    if !typeSize.isAccessibilitySize { Spacer(minLength: 8) }
                     PasteButton(payloadType: String.self, onPaste: handlePastedText)
                         .labelStyle(.titleOnly)
                         .accessibilityLabel("Paste backup text")

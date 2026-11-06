@@ -4,12 +4,12 @@ Research checked 2026-11-05. This is a practical selection of established habit 
 
 ## What the local implementation accepts
 
-In Settings → Data → Import from another app, choose a file or tap Paste beside **Paste history text**, review the preview, then tap Import history. Parsing happens on the device. Canceling the preview writes nothing.
+In Settings → Import & export → Import from another app, choose a file or tap Paste beside **Paste history text**, review the preview, then tap Import history. Parsing happens on the device. Canceling the preview writes nothing.
 
 ### If the file picker does not work in your sideloaded copy
 
-- **Tendelm JSON backup:** Settings → Data → **Open json.site**. Choose the backup on [json.site](https://json.site/), copy its JSON contents, tap the browser's Done button, then tap Paste beside **Paste backup text**. Review and confirm. This follows Elsepin's existing helper-and-paste flow.
-- **Streaks, Habitify or simple daily CSV:** Import from another app → **Open CSV helper**. Choose your CSV on [CSVJSON](https://csvjson.com/csv2json), keep its default row-array output, copy the JSON, tap Done, then Paste. Raw CSV text copied from an editor also works. Turn off Parse JSON if a cell is treated as a nested object or array.
+- **Tendelm JSON backup:** Settings → Import & export → the inline **json.site** link. Choose the backup on [json.site](https://json.site/), copy its JSON contents, tap the browser's Done button, then tap Paste beside **Paste backup text**. Review and confirm. This follows Elsepin's existing helper-and-paste flow.
+- **Streaks, Habitify or simple daily CSV:** Import from another app → the inline **CSVJSON** link. Choose your CSV on [CSVJSON](https://csvjson.com/csv2json), keep its default row-array output, copy the JSON, tap Done, then Paste. Raw CSV text copied from an editor also works. Turn off Parse JSON if a cell is treated as a nested object or array.
 
 Paste copies the file's **contents**, not a website/file link. Native PasteButton requests access only when tapped. Opening either helper does not send a backup, read the clipboard, import data, or write records. The system Safari sheet provides Done; returning leaves the user at the import screen. Third-party pages have their own policies: CSVJSON states conversion runs in the browser; that statement is not a network audit. Do not use json.site's Share feature for private backups.
 

@@ -84,7 +84,7 @@ run_xcode() {
   fi
 }
 
-ui_tests=(-only-testing:TendelmUITests/PersonalEditionTests -only-testing:TendelmUITests/HabitThemePickerTests -only-testing:TendelmUITests/OverviewDayEditTests -only-testing:TendelmUITests/DayStartPickerTests -only-testing:TendelmUITests/DevModeSwapTests)
+ui_tests=(-only-testing:TendelmUITests/PersonalEditionTests -only-testing:TendelmUITests/HabitThemePickerTests -only-testing:TendelmUITests/OverviewDayEditTests -only-testing:TendelmUITests/DayStartPickerTests -only-testing:TendelmUITests/DevModeSwapTests -only-testing:TendelmUITests/LogValueSheetTests)
 if [[ -n "$baseline" ]]; then
   # A manual resume is only for an already-verified unit suite and unchanged
   # production code. Normal builds always run the complete selection below.
@@ -133,7 +133,7 @@ if [[ -z "$baseline" ]]; then
     -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath "$out/DerivedData" \
     -resultBundlePath "$out/Paste-iPhone.xcresult" -only-testing:TendelmUITests/PasteImportTests -only-testing:TendelmUITests/RecentlyDeletedUITests \
     -parallel-testing-enabled NO -test-timeouts-enabled YES \
-    -default-test-execution-time-allowance 90 -maximum-test-execution-time-allowance 180 CODE_SIGNING_ALLOWED=NO
+    -default-test-execution-time-allowance 360 -maximum-test-execution-time-allowance 420 CODE_SIGNING_ALLOWED=NO
 fi
 run_xcode iphone-ui test-without-building -project Tendelm.xcodeproj -scheme Tendelm \
   -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath "$out/DerivedData" \

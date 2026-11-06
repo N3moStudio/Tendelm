@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 import TendelmCore
 
 struct ExternalImportView: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.modelContext) private var context
     @Environment(\.calendar) private var calendar
     @State private var showsPicker = false
@@ -27,9 +28,12 @@ struct ExternalImportView: View {
                 Button("Choose a file", systemImage: "doc") { showsPicker = true }
                     .disabled(isReading || helper != nil)
                     .accessibilityIdentifier("externalImport.choose")
-                HStack {
-                    Label("Paste history text", systemImage: "doc.on.clipboard")
-                    Spacer(minLength: 8)
+                let pasteLayout = typeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+                    : AnyLayout(HStackLayout(spacing: 12))
+                pasteLayout {
+                    SettingsRow(title: "Paste history text", symbol: "doc.on.clipboard")
+                    if !typeSize.isAccessibilitySize { Spacer(minLength: 8) }
                     PasteButton(payloadType: String.self, onPaste: paste)
                         .labelStyle(.titleOnly)
                         .accessibilityLabel("Paste history text")

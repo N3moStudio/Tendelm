@@ -57,7 +57,7 @@ struct HabitDetailView: View {
     @State private var showingArchiveConfirmation = false
     @State private var showingDeleteConfirmation = false
     @State private var deletionError: String?
-    @State private var showingTimerSheet = false
+    @State private var showingLogSheet = false
     @State private var showingScoreInfo = false
     @State private var editingDay: Date? = nil
     /// The latest quick-log or popover step, for the haptic — one seam
@@ -193,9 +193,10 @@ struct HabitDetailView: View {
                 HabitUnavailableView()
             }
         }
-        .sheet(isPresented: $showingTimerSheet) {
+        .sheet(isPresented: $showingLogSheet) {
             if let record {
-                TimerLogSheet(habit: record)
+                if case .counter = habit.type { CounterLogSheet(habit: record) }
+                else { TimerLogSheet(habit: record) }
             } else {
                 HabitUnavailableView()
             }
@@ -273,12 +274,13 @@ struct HabitDetailView: View {
                 target: target,
                 todayValue: todayCounterValue,
                 onIncrement: incrementCounter,
-                onDecrement: decrementCounter
+                onDecrement: decrementCounter,
+                onSetValue: { showingLogSheet = true }
             )
             .disabled(isArchived)
         case .timer:
             Button {
-                showingTimerSheet = true
+                showingLogSheet = true
             } label: {
                 Label("Log a session", systemImage: "timer")
                     .font(.body.weight(.semibold))

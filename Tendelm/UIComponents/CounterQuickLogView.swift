@@ -12,6 +12,7 @@ struct CounterQuickLogView: View {
     let todayValue: Double
     let onIncrement: () -> Void
     let onDecrement: () -> Void
+    var onSetValue: (() -> Void)? = nil
 
     private var targetReached: Bool { todayValue >= target }
     private var canDecrement: Bool { todayValue > 0 }
@@ -31,17 +32,16 @@ struct CounterQuickLogView: View {
             .disabled(!canDecrement)
             .accessibilityLabel(String(localized: "Decrement"))
 
-            VStack(spacing: 2) {
-                Text("\(Int(todayValue))")
-                    .font(.system(size: 36, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(targetReached ? Color.accentColor : Color.primary)
-                    .accessibilityIdentifier(AccessibilityID.HabitDetail.quickLogValue)
-                Text(String(localized: "of \(Int(target))"))
-                    .font(.caption)
-                    .foregroundStyle(Color.kadoForegroundSecondary)
+            Group {
+                if let onSetValue {
+                    Button(action: onSetValue) { valueLabel }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Set today's value")
+                        .accessibilityValue("\(Int(todayValue)) of \(Int(target))")
+                        .accessibilityIdentifier("habitDetail.setValue")
+                } else { valueLabel }
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, minHeight: 44)
 
             Button(action: onIncrement) {
                 Image(systemName: "plus")
@@ -61,6 +61,20 @@ struct CounterQuickLogView: View {
             RoundedRectangle(cornerRadius: TendelmRadius.card)
                 .fill(Color.kadoBackgroundSecondary)
         )
+    }
+
+    private var valueLabel: some View {
+        VStack(spacing: 2) {
+            Text("\(Int(todayValue))")
+                .font(.system(size: 36, weight: .bold, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(targetReached ? Color.accentColor : Color.primary)
+                .accessibilityIdentifier(AccessibilityID.HabitDetail.quickLogValue)
+            Text(String(localized: "of \(Int(target))"))
+                .font(.caption)
+                .foregroundStyle(Color.kadoForegroundSecondary)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 

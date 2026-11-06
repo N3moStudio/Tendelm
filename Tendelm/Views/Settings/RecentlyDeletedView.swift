@@ -42,11 +42,14 @@ struct RecentlyDeletedView: View {
                     } else {
                         VStack(alignment: .leading, spacing: 6) {
                             label(item)
-                            HStack {
-                                Button("Restore") { restore([item.id]) }
+                            let actionsLayout = typeSize.isAccessibilitySize
+                                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
+                                : AnyLayout(HStackLayout())
+                            actionsLayout {
+                                Button { restore([item.id]) } label: { Text("Restore").frame(minHeight: 44) }
                                     .accessibilityIdentifier("trash.restore.\(item.id)")
-                                Spacer(minLength: 12)
-                                Button("Delete permanently", role: .destructive) { review([item.id]) }
+                                if !typeSize.isAccessibilitySize { Spacer(minLength: 12) }
+                                Button(role: .destructive) { review([item.id]) } label: { Text("Delete permanently").frame(minHeight: 44) }
                                     .accessibilityIdentifier("trash.delete.\(item.id)")
                             }.buttonStyle(.borderless).frame(minHeight: 44)
                         }
@@ -70,16 +73,18 @@ struct RecentlyDeletedView: View {
             if selecting && !visible.isEmpty {
                 let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 8)) : AnyLayout(HStackLayout(spacing: 16))
                 layout {
-                    Button(selected.count == visible.count ? "Deselect All" : "Select All") {
+                    Button {
                         selected = selected.count == visible.count ? [] : Set(visible.map(\.id))
-                    }.accessibilityIdentifier("trash.selectAll")
+                    } label: { Text(selected.count == visible.count ? "Deselect All" : "Select All").frame(minHeight: 44) }
+                    .accessibilityIdentifier("trash.selectAll")
                     if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
                     if !selected.isEmpty {
-                        Button("Restore") { restore(selected) }.accessibilityIdentifier("trash.restoreSelected")
+                        Button { restore(selected) } label: { Text("Restore").frame(minHeight: 44) }.accessibilityIdentifier("trash.restoreSelected")
                     }
-                    Button(selected.isEmpty ? "Delete All" : "Delete (\(selected.count))", role: .destructive) {
+                    Button(role: .destructive) {
                         review(selected.isEmpty ? Set(visible.map(\.id)) : selected)
-                    }.accessibilityIdentifier("trash.deleteSelected")
+                    } label: { Text(selected.isEmpty ? "Delete All" : "Delete (\(selected.count))").frame(minHeight: 44) }
+                    .accessibilityIdentifier("trash.deleteSelected")
                 }
                 .font(.subheadline.weight(.semibold))
                 .buttonStyle(.borderless)

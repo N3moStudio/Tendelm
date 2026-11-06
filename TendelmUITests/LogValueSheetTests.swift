@@ -60,6 +60,7 @@ final class LogValueSheetTests: TendelmUITestCase {
         field.typeText("3")
         XCTAssertTrue(save.isEnabled)
         tapSave(in: app)
+        popToToday(in: app)
         XCTAssertTrue(
             waited(forRow: row, toReadValue: "3 of 8", in: app),
             "Saving 3 should put 3 on the row; it reads \(value(ofRow: row, in: app))."
@@ -74,6 +75,7 @@ final class LogValueSheetTests: TendelmUITestCase {
         field.typeText("25")
         capture(app, "counter-sheet-typed-25")
         tapSave(in: app)
+        popToToday(in: app)
         XCTAssertTrue(
             waited(forRow: row, toReadValue: "25 of 8", in: app),
             "Typing 25 over a selected 3 should save 25, not 325; the row reads \(value(ofRow: row, in: app))."
@@ -118,13 +120,13 @@ final class LogValueSheetTests: TendelmUITestCase {
         leaveHabitDetail(in: app)
     }
 
-    /// Opens the log sheet from a row's long-press menu.
+    /// Opens details, then taps the counter's value.
     @MainActor
     private func openLogSheet(fromRow row: String, in app: XCUIApplication) {
-        element(ofRow: row, in: app).press(forDuration: 1)
-        let menuItem = app.buttons[AccessibilityID.Today.logValueMenuItem].firstMatch
-        XCTAssertTrue(menuItem.waitForExistence(timeout: 5), "The row's menu should offer Log specific value…")
-        menuItem.tap()
+        element(ofRow: row, in: app).tap()
+        let value = app.buttons["habitDetail.setValue"]
+        XCTAssertTrue(value.waitForExistence(timeout: 5))
+        value.tap()
     }
 
     @MainActor

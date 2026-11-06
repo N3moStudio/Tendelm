@@ -1,6 +1,11 @@
 import XCTest
 
 final class RecentlyDeletedUITests: TendelmUITestCase {
+    override func setUp() {
+        super.setUp()
+        // iOS context menus can incur two 60-second XCTest animation-idle waits.
+        executionTimeAllowance = 360
+    }
     @MainActor
     func testTodayDeleteAndRestoreSurviveRelaunch() {
         var app = launchApp(seedProduction: true)
@@ -12,6 +17,8 @@ final class RecentlyDeletedUITests: TendelmUITestCase {
         capture(app, "17-habit-delete-menu")
         app.buttons["habit.delete"].tap()
         XCTAssertTrue(todayRow(id, in: app).waitForNonExistence(timeout: 5))
+        tapTab(.settings, in: app)
+        capture(app, "22-grouped-settings")
         openSettingsPage("settings.recentlyDeleted", in: app)
         let restore = prefixedButton("trash.restore.", in: app)
         XCTAssertTrue(restore.waitForExistence(timeout: 5))
@@ -120,10 +127,12 @@ final class RecentlyDeletedUITests: TendelmUITestCase {
     func testGroupedSettingsAtLargeText() {
         let app = launchApp(seedProduction: true, contentSize: "UICTContentSizeCategoryAccessibilityXXXL")
         tapTab(.settings, in: app)
+        XCTAssertLessThan(app.buttons[AccessibilityID.Settings.appearanceRow].frame.height, app.frame.height * 0.5)
         capture(app, "20-grouped-settings-large-text")
         scrollTo(app.buttons["settings.importExport"], in: app)
         app.buttons["settings.importExport"].tap()
         XCTAssertTrue(app.buttons["backup.paste"].waitForExistence(timeout: 5))
+        XCTAssertLessThan(app.staticTexts["Paste backup text"].frame.height, app.frame.height * 0.3)
         capture(app, "21-import-settings-large-text")
         scrollTo(app.links["json.site"].firstMatch, in: app)
     }
