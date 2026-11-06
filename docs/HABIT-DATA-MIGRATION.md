@@ -1,10 +1,19 @@
 # Habit history migration
 
-Research checked 2026-11-05. This is a practical selection of established habit apps, not a verified market-share ranking. Source formats can change; no user's real export was supplied. The new adapters follow documented columns and synthetic fixtures, and still need native compilation and real-export acceptance checks.
+Research checked 2026-11-05. This is a practical selection of established habit apps, not a verified market-share ranking. Source formats can change; no user's real export was supplied. The adapters follow documented columns and synthetic fixtures. Native checks are recorded by release; real-export acceptance remains pending.
 
 ## What the local implementation accepts
 
-In Settings → Data → Import from another app, choose a file and review the preview, then tap Import history. Parsing happens on the device. Canceling the preview writes nothing.
+In Settings → Data → Import from another app, choose a file or tap Paste beside **Paste history text**, review the preview, then tap Import history. Parsing happens on the device. Canceling the preview writes nothing.
+
+### If the file picker does not work in your sideloaded copy
+
+- **Tendelm JSON backup:** Settings → Data → **Open json.site**. Choose the backup on [json.site](https://json.site/), copy its JSON contents, tap the browser's Done button, then tap Paste beside **Paste backup text**. Review and confirm. This follows Elsepin's existing helper-and-paste flow.
+- **Streaks, Habitify or simple daily CSV:** Import from another app → **Open CSV helper**. Choose your CSV on [CSVJSON](https://csvjson.com/csv2json), keep its default row-array output, copy the JSON, tap Done, then Paste. Raw CSV text copied from an editor also works. Turn off Parse JSON if a cell is treated as a nested object or array.
+
+Paste copies the file's **contents**, not a website/file link. Native PasteButton requests access only when tapped. Opening either helper does not send a backup, read the clipboard, import data, or write records. The system Safari sheet provides Done; returning leaves the user at the import screen. Third-party pages have their own policies: CSVJSON states conversion runs in the browser; that statement is not a network audit. Do not use json.site's Share feature for private backups.
+
+The CSV helper changes the text format only. It does not add support for unsupported apps or convert a full database backup into daily history. JSON input must be an array of daily row objects with the same columns as the supported CSV. Both routes use the same status/date/identity validation, duplicate handling and confirmation. A Tendelm backup belongs in **Paste backup text**, not **Paste history text**.
 
 | Source | Accepted format | Mapping and limits |
 |---|---|---|
@@ -18,7 +27,7 @@ Namespaced source IDs keep repeated imports from duplicating records, including 
 
 Existing imported habits retain their names, colors, schedules and reminders. Existing daily records win over incoming data, even when their IDs differ. Earlier new days extend the habit's start date so that history is visible. Changed goal types stop merging rather than guessing quantities. Removing an existing day and importing that source day again can recreate it; deleted records do not have tombstones. Unrelated habits and time-since trackers remain intact. Save failures roll back this import; unfinished edits block it before mutation.
 
-Limits: UTF-8 CSV, 8 MB, 50,000 rows, 500 habits, 240-character habit names and 10,000-character notes. Conflicting duplicate rows, invalid/future dates, unknown statuses and malformed files reject the whole import before writing.
+Limits: UTF-8 CSV or converted JSON row arrays, 8 MB, 50,000 rows, 500 habits, 240-character habit names and 10,000-character notes. JSON has at most 100 columns and cannot contain nested cell values. Conflicting duplicate rows, invalid/future dates, unknown statuses and malformed files reject the whole import before writing.
 
 ## Export/import landscape
 
