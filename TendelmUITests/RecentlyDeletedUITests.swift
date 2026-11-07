@@ -63,13 +63,13 @@ final class RecentlyDeletedUITests: TendelmUITestCase {
         XCTAssertEqual(app.buttons["trash.deleteSelected"].label, "Delete (1)")
         capture(app, "19-recently-deleted-selection")
         app.buttons["trash.deleteSelected"].tap()
-        app.buttons["Cancel"].tap()
+        cancelConfirmation("trash.confirmDelete", in: app)
         XCTAssertTrue(app.buttons["trash.restoreSelected"].exists)
         app.buttons["trash.deleteSelected"].tap()
-        app.buttons["trash.confirmDelete"].tap()
+        app.buttons["trash.confirmDelete"].firstMatch.tap()
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'trash.select.'")).count, 1)
         app.buttons["trash.deleteSelected"].tap()
-        app.buttons["trash.confirmDelete"].tap()
+        app.buttons["trash.confirmDelete"].firstMatch.tap()
         XCTAssertTrue(elements(withIdentifierPrefix: "trash.empty", in: app).firstMatch.waitForExistence(timeout: 5))
         tapTab(.today, in: app)
         XCTAssertTrue(todayRows(in: app).firstMatch.exists)
@@ -103,13 +103,13 @@ final class RecentlyDeletedUITests: TendelmUITestCase {
         openSettingsPage("settings.privacy", in: app)
         scrollTo(app.buttons["settings.erase"], in: app)
         app.buttons["settings.erase"].tap()
-        app.buttons["Cancel"].tap()
+        cancelConfirmation("settings.eraseConfirm", in: app)
         tapTab(.today, in: app)
         XCTAssertTrue(todayRows(in: app).firstMatch.exists)
         tapTab(.settings, in: app)
         app.buttons["settings.erase"].tap()
-        app.buttons["settings.eraseConfirm"].tap()
-        XCTAssertTrue(app.buttons["settings.eraseConfirm"].waitForNonExistence(timeout: 5))
+        app.buttons["settings.eraseConfirm"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["settings.eraseConfirm"].firstMatch.waitForNonExistence(timeout: 5))
         tapTab(.today, in: app)
         XCTAssertEqual(todayRows(in: app).count, 0)
         tapTab(.timeSince, in: app)
@@ -135,6 +135,21 @@ final class RecentlyDeletedUITests: TendelmUITestCase {
         XCTAssertLessThan(app.staticTexts["Paste backup text"].frame.height, app.frame.height * 0.3)
         capture(app, "21-import-settings-large-text")
         scrollTo(app.links["json.site"].firstMatch, in: app)
+    }
+
+    @MainActor
+    private func cancelConfirmation(_ confirmID: String, in app: XCUIApplication) {
+        let confirm = app.buttons[confirmID].firstMatch
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        let cancel = app.buttons["Cancel"].firstMatch
+        if cancel.exists {
+            cancel.tap()
+        } else {
+            // Native popover confirmations omit Cancel; tapping outside dismisses.
+            // The navigation title is outside both of these bottom/middle anchors.
+            app.navigationBars.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        }
+        XCTAssertTrue(confirm.waitForNonExistence(timeout: 5))
     }
 
     @MainActor

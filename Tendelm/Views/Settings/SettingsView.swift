@@ -7,6 +7,12 @@ struct SettingsView: View {
     @Query(filter: #Predicate<HabitRecord> { $0.archivedAt != nil }) private var archived: [HabitRecord]
     @Query private var deleted: [RecentlyDeletedRecord]
 
+    private var recoveryCount: Int { deleted.filter { $0.expiresAt > .now }.count }
+    private var recoverySubtitle: LocalizedStringKey? {
+        guard recoveryCount > 0 else { return nil }
+        return recoveryCount == 1 ? "1 item" : "\(recoveryCount) items"
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -28,7 +34,7 @@ struct SettingsView: View {
                         SettingsRow(title: "Archived habits", symbol: "archivebox", subtitle: archived.isEmpty ? nil : "\(archived.count) saved")
                     }.accessibilityIdentifier(AccessibilityID.Settings.archivedRow)
                     NavigationLink { RecentlyDeletedView() } label: {
-                        SettingsRow(title: "Recently Deleted", symbol: "trash", subtitle: deleted.isEmpty ? nil : "\(deleted.filter { $0.expiresAt > .now }.count) items")
+                        SettingsRow(title: "Recently Deleted", symbol: "trash", subtitle: recoverySubtitle)
                     }.accessibilityIdentifier("settings.recentlyDeleted")
                     NavigationLink { ImportExportSettingsView() } label: {
                         SettingsRow(title: "Import & export", symbol: "externaldrive")
