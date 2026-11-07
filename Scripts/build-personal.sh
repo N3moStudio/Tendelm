@@ -12,8 +12,11 @@ command -v python3 >/dev/null
 out=$(mktemp -d "$root/.build-personal-XXXXXXXX")
 baseline=${TENDELM_RESUME_UI_BASELINE:-}
 color_baseline=${TENDELM_UNDO_COLOR_BASELINE:-}
+settings_baseline=${TENDELM_SETTINGS_TEST_BASELINE:-}
+[[ -z "$settings_baseline" || ( -z "$baseline" && -z "$color_baseline" ) ]] || { echo "Choose one baseline mode." >&2; exit 1; }
 [[ -z "$baseline" || -z "$color_baseline" ]] || { echo "Choose one baseline mode." >&2; exit 1; }
 [[ -z "$color_baseline" ]] || baseline=$color_baseline
+[[ -z "$settings_baseline" ]] || baseline=$settings_baseline
 echo "Build logs and test results: $out"
 
 assert_idle() {
@@ -90,7 +93,16 @@ if [[ -n "$baseline" ]]; then
   # production code. Normal builds always run the complete selection below.
   [[ "$baseline" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid verified baseline." >&2; exit 1; }
   git cat-file -e "$baseline^{commit}" 2>/dev/null || git fetch --no-tags --depth=1 origin "$baseline"
-  if [[ -n "$color_baseline" ]]; then
+  if [[ -n "$settings_baseline" ]]; then
+    # Run 6aeebce824e1ec23755711d9 passed all unit and focused import/recovery
+    # tests. Only these test-driver corrections may reuse those results.
+    [[ "$baseline" == 755da7f7324543da2b30ec55cece07d187cb9acc ]] || { echo "Unverified settings baseline." >&2; exit 1; }
+    git diff --exit-code "$baseline" HEAD -- . \
+      ':(exclude)TendelmUITests/DayStartPickerTests.swift' \
+      ':(exclude)TendelmUITests/LogValueSheetTests.swift' \
+      ':(exclude)Scripts/build-personal.sh'
+    echo "Reusing passed unit and focused import/recovery results from identical app source at $baseline."
+  elif [[ -n "$color_baseline" ]]; then
     # Reuse is restricted to the exact reviewed text-contrast correction. Any
     # other app/test change refuses this short validation route.
     git diff --exit-code "$baseline" HEAD -- . \
@@ -114,7 +126,9 @@ PY
   fi
   run_xcode simulator-build build-for-testing -project Tendelm.xcodeproj -scheme Tendelm \
     -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath "$out/DerivedData" CODE_SIGNING_ALLOWED=NO
-  ui_tests=(-only-testing:TendelmUITests/PersonalEditionTests/testChooseFutureDateThenEditAndRelaunch)
+  if [[ -z "$settings_baseline" ]]; then
+    ui_tests=(-only-testing:TendelmUITests/PersonalEditionTests/testChooseFutureDateThenEditAndRelaunch)
+  fi
   if [[ -n "$color_baseline" ]]; then
     ui_tests=(-only-testing:TendelmUITests/PersonalEditionTests/testRecentUndoExpiresAndDoesNotWalkHistory)
   fi

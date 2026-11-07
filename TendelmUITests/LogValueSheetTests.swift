@@ -17,7 +17,7 @@ import XCTest
 /// exactly the menus it is about.
 final class LogValueSheetTests: TendelmUITestCase {
 
-    /// The counter sheet from the Today row's menu, twice: once over
+    /// The counter sheet from the habit detail, twice: once over
     /// the seed's empty today, and once over the value the first save
     /// left, which is the case that tells select-all from append.
     @MainActor
@@ -42,6 +42,7 @@ final class LogValueSheetTests: TendelmUITestCase {
         // Over the cap: rejected outright, never clamped to a number
         // nobody typed. The prefill is selected, so this replaces it.
         let save = app.buttons[AccessibilityID.LogSheet.saveButton]
+        focusIfNeeded(field, in: app)
         field.typeText("1234567")
         XCTAssertFalse(save.isEnabled, "Save should be disabled while the number is above the cap.")
 
@@ -72,6 +73,7 @@ final class LogValueSheetTests: TendelmUITestCase {
 
         // Typed straight over the prefill, no delete first: this is the
         // select-all under test.
+        focusIfNeeded(field, in: app)
         field.typeText("25")
         capture(app, "counter-sheet-typed-25")
         tapSave(in: app)
@@ -101,6 +103,7 @@ final class LogValueSheetTests: TendelmUITestCase {
             "With nothing logged today the field should prefill with the 30-minute target."
         )
 
+        focusIfNeeded(field, in: app)
         field.typeText("45")
         capture(app, "timer-sheet-typed-45")
         tapSave(in: app)
@@ -113,6 +116,14 @@ final class LogValueSheetTests: TendelmUITestCase {
     }
 
     // MARK: - Driving
+
+    /// iOS 26.5 requires the user's first tap; newer releases autofocus.
+    /// Do not manually select the text: replacement remains under test.
+    @MainActor
+    private func focusIfNeeded(_ field: XCUIElement, in app: XCUIApplication) {
+        if !app.keyboards.firstMatch.exists { field.tap() }
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+    }
 
     /// Back from the detail that `openHabitDetail` left on screen.
     @MainActor

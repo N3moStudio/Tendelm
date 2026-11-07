@@ -60,7 +60,7 @@ final class DayStartPickerTests: TendelmUITestCase {
         // And the footer swaps from the midnight explanation to the
         // custom-hour one.
         let footer = app.staticTexts.matching(
-            NSPredicate(format: "label BEGINSWITH %@", "Until this hour, Today still shows the previous day")
+            NSPredicate(format: "label BEGINSWITH %@", "Before this hour, Today shows the previous day")
         ).firstMatch
         XCTAssertTrue(footer.waitForExistence(timeout: 5), "The custom-hour footer should replace the midnight one.")
         capture(app, "day-start-2pm-selected")
