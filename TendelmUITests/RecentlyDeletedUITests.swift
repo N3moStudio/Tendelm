@@ -141,14 +141,9 @@ final class RecentlyDeletedUITests: TendelmUITestCase {
     private func cancelConfirmation(_ confirmID: String, in app: XCUIApplication) {
         let confirm = app.buttons[confirmID].firstMatch
         XCTAssertTrue(confirm.waitForExistence(timeout: 5))
-        let cancel = app.buttons["Cancel"].firstMatch
-        if cancel.exists {
-            cancel.tap()
-        } else {
-            // Native popover confirmations omit Cancel; tapping outside dismisses.
-            // The navigation title is outside both of these bottom/middle anchors.
-            app.navigationBars.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-        }
+        let cancel = app.alerts.buttons["Cancel"].firstMatch
+        XCTAssertTrue(cancel.waitForExistence(timeout: 5))
+        cancel.tap()
         XCTAssertTrue(confirm.waitForNonExistence(timeout: 5))
     }
 

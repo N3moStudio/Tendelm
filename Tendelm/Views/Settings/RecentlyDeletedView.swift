@@ -57,6 +57,15 @@ struct RecentlyDeletedView: View {
                 }
             } footer: { Text("Kept for 30 days. Restoring brings back the item and its history.") }
             .listRowBackground(Color.kadoBackgroundSecondary)
+            .alert("Permanently delete \(deletion?.ids.count ?? 0) \(deletion?.ids.count == 1 ? "item" : "items")?",
+                   isPresented: Binding(get: { deletion != nil }, set: { if !$0 { deletion = nil } }), presenting: deletion) { plan in
+                Button("Cancel", role: .cancel) { deletion = nil }
+                Button("Delete permanently", role: .destructive) {
+                    do { try RecentlyDeletedStore().permanentlyDelete(ids: plan.ids, in: context); selected.subtract(plan.ids) }
+                    catch { self.error = error.localizedDescription }
+                    deletion = nil
+                }.accessibilityIdentifier("trash.confirmDelete")
+            } message: { plan in Text("\(plan.names). This cannot be undone. Items outside Recently Deleted stay as they are.") }
         }
         .scrollContentBackground(.hidden)
         .background(Color.kadoBackground)
@@ -95,15 +104,6 @@ struct RecentlyDeletedView: View {
         }
         .onAppear(perform: prune)
         .onChange(of: records.map(\.id)) { _, ids in selected.formIntersection(ids) }
-        .confirmationDialog("Permanently delete \(deletion?.ids.count ?? 0) \(deletion?.ids.count == 1 ? "item" : "items")?",
-               isPresented: Binding(get: { deletion != nil }, set: { if !$0 { deletion = nil } }), titleVisibility: .visible, presenting: deletion) { plan in
-            Button("Cancel", role: .cancel) { deletion = nil }
-            Button("Delete permanently", role: .destructive) {
-                do { try RecentlyDeletedStore().permanentlyDelete(ids: plan.ids, in: context); selected.subtract(plan.ids) }
-                catch { self.error = error.localizedDescription }
-                deletion = nil
-            }.accessibilityIdentifier("trash.confirmDelete")
-        } message: { plan in Text("\(plan.names). This cannot be undone. Items outside Recently Deleted stay as they are.") }
         .alert("Couldn't update Recently Deleted", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("OK", role: .cancel) {}
         } message: { Text(error ?? "") }

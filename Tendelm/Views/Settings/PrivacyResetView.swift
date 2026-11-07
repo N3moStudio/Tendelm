@@ -22,6 +22,12 @@ struct PrivacyResetView: View {
             Section {
                 Button("Erase all data", systemImage: "trash", role: .destructive) { confirming = true }
                     .frame(minHeight: 44).accessibilityIdentifier("settings.erase")
+                    .alert("Erase all Tendelm data?", isPresented: $confirming) {
+                        Button("Erase all data", role: .destructive) {
+                            do { try erase() } catch { self.error = error.localizedDescription }
+                        }.accessibilityIdentifier("settings.eraseConfirm")
+                        Button("Cancel", role: .cancel) {}
+                    } message: { Text("This also empties Recently Deleted. It cannot be undone. Export a backup first if you want to keep anything.") }
             } header: { Text("Start fresh") }
             footer: {
                 Text("Permanently removes habits, history, trackers, Recently Deleted and app settings. Backups saved in Files and iOS permissions stay unchanged.")
@@ -32,12 +38,6 @@ struct PrivacyResetView: View {
         .background(Color.kadoBackground)
         .navigationTitle("Privacy & reset")
         .navigationBarTitleDisplayMode(.inline)
-        .confirmationDialog("Erase all Tendelm data?", isPresented: $confirming, titleVisibility: .visible) {
-            Button("Erase all data", role: .destructive) {
-                do { try erase() } catch { self.error = error.localizedDescription }
-            }.accessibilityIdentifier("settings.eraseConfirm")
-            Button("Cancel", role: .cancel) {}
-        } message: { Text("This also empties Recently Deleted. It cannot be undone. Export a backup first if you want to keep anything.") }
         .alert("Reset not complete", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("OK", role: .cancel) {}
         } message: { Text(error ?? "") }
