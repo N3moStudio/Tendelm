@@ -17,7 +17,7 @@ A calm personal habit and time-since tracker for iPhone and iPad. Built from [Ka
 
 ## Personal build
 
-Version **1.0.4 (5)** was built privately on Codemagic and delivered as `C:\Users\naith\Desktop\ipa\My Projects (N3mo Studio)\Tendelm-1.0.4.ipa`. It includes website helpers, reviewed paste imports, recent Undo, swipe history deletion and the dark-mode contrast fix. The full run passed 828 unit tests (plus one pre-existing expected issue) and 26 UI checks, followed by the Release device build and package inspection. It requires personal sideload signing. See [validation evidence and remaining device checks](docs/TENDELM-1.0.4-VALIDATION.md).
+Version **1.0.5 (6)** was built privately on Codemagic and delivered as `C:\Users\naith\Desktop\ipa\My Projects (N3mo Studio)\Tendelm-1.0.5.ipa`. It adds long-press Delete, 30-day Recently Deleted, grouped Settings and an explicit full reset, while preserving paste imports and recent Undo. Identical-source validation covers 838 unit passes (plus one pre-existing expected issue) and 41 UI checks, followed by the Release device build and package inspection. It requires personal sideload signing. See [validation evidence and remaining device checks](docs/TENDELM-1.0.5-VALIDATION.md).
 
 Historical [1.0.3 validation](docs/TENDELM-1.0.3-VALIDATION.md), [1.0.2 validation](docs/TENDELM-1.0.2-VALIDATION.md), [1.0.1 validation](docs/TENDELM-1.0.1-VALIDATION.md), [1.0.1 simulator screenshots](docs/screenshots/tendelm-1.0.1), and [build 1 evidence](docs/TENDELM-VALIDATION.md) apply only to those versions. The older Tendelm IPA was moved to the Recycle Bin after verifying the replacement.
 
