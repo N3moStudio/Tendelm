@@ -75,7 +75,8 @@ private struct SettingsPageModifier: ViewModifier {
             .environment(\.defaultMinListRowHeight, 52)
             .scrollContentBackground(.hidden)
             .background(Color.kadoBackground.ignoresSafeArea())
-            .foregroundStyle(Color.kadoForeground)
+            // Leave control foregrounds semantic so destructive and disabled
+            // actions retain their native warning/dimmed appearance.
             .tint(Color.kadoAccent)
             // iOS owns its navigation material (glass on supported systems,
             // native material on older ones). Content rows remain opaque.
