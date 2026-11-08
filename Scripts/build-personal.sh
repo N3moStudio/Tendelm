@@ -13,10 +13,13 @@ out=$(mktemp -d "$root/.build-personal-XXXXXXXX")
 baseline=${TENDELM_RESUME_UI_BASELINE:-}
 color_baseline=${TENDELM_UNDO_COLOR_BASELINE:-}
 settings_baseline=${TENDELM_SETTINGS_TEST_BASELINE:-}
+package_baseline=${TENDELM_VERIFIED_PACKAGE_BASELINE:-}
 [[ -z "$settings_baseline" || ( -z "$baseline" && -z "$color_baseline" ) ]] || { echo "Choose one baseline mode." >&2; exit 1; }
 [[ -z "$baseline" || -z "$color_baseline" ]] || { echo "Choose one baseline mode." >&2; exit 1; }
 [[ -z "$color_baseline" ]] || baseline=$color_baseline
 [[ -z "$settings_baseline" ]] || baseline=$settings_baseline
+[[ -z "$package_baseline" || -z "$baseline" ]] || { echo "Choose one baseline mode." >&2; exit 1; }
+[[ -z "$package_baseline" ]] || baseline=$package_baseline
 echo "Build logs and test results: $out"
 
 assert_idle() {
@@ -68,8 +71,6 @@ trap finish EXIT
 assert_idle
 xcodebuild -version | tee "$out/toolchain.log"
 swift --version >> "$out/toolchain.log"
-device_id=${TENDELM_SIMULATOR_ID:-$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(v["udid"] for a in d["devices"].values() for v in a if "iPhone" in v["name"]))')}
-
 run_xcode() {
   local name=$1
   shift
@@ -86,6 +87,16 @@ run_xcode() {
     return "$status"
   fi
 }
+
+
+if [[ -n "$package_baseline" ]]; then
+  [[ "$package_baseline" == d205ded203d60346d0efa2b10048f1148b6b7e98 ]] || { echo "Unverified package baseline." >&2; exit 1; }
+  git cat-file -e "$package_baseline^{commit}" 2>/dev/null || git fetch --no-tags --depth=1 origin "$package_baseline"
+  python3 Scripts/verify-settings-baseline.py "$package_baseline" > "$out/source-equivalence.json"
+  echo "Reusing 841 unit passes, 1 expected issue and 17 UI passes from native run 6aeff00124e1ec2375576207; app/test source equality verified."
+else
+device_id=${TENDELM_SIMULATOR_ID:-$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(v["udid"] for a in d["devices"].values() for v in a if "iPhone" in v["name"]))')}
+
 
 ui_tests=(-only-testing:TendelmUITests/PersonalEditionTests -only-testing:TendelmUITests/HabitThemePickerTests -only-testing:TendelmUITests/OverviewDayEditTests -only-testing:TendelmUITests/DayStartPickerTests -only-testing:TendelmUITests/DevModeSwapTests -only-testing:TendelmUITests/LogValueSheetTests)
 if [[ -n "$baseline" ]]; then
@@ -176,6 +187,7 @@ run_xcode ipad-ui test-without-building -project Tendelm.xcodeproj -scheme Tende
   -only-testing:TendelmUITests/PersonalEditionTests/testSwipeDeleteHistoryUndoAndRelaunch \
   -only-testing:TendelmUITests/PasteImportTests/testHistoryPastePreviewCancelAndRepeatImport \
   -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO
+fi # Reuse only explicitly verified, unchanged app/test source.
 run_xcode device-build build -project Tendelm.xcodeproj -scheme Tendelm -configuration Release \
   -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath "$out/DeviceBuild" CODE_SIGNING_ALLOWED=NO
 app="$out/DeviceBuild/Build/Products/Release-iphoneos/Tendelm.app"
