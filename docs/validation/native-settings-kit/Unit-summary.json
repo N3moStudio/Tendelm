@@ -1,0 +1,45 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "E35085EA-6FCB-4E87-8EF4-004E586A9F0F",
+        "deviceName" : "iPhone 17 Pro",
+        "modelName" : "iPhone 17 Pro",
+        "osBuildNumber" : "23F77",
+        "osVersion" : "26.5",
+        "platform" : "iOS Simulator"
+      },
+      "expectedFailures" : 1,
+      "failedTests" : 0,
+      "passedTests" : 1034,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "Tendelm · Built with macOS 26.5.1",
+  "expectedFailures" : 1,
+  "failedTests" : 0,
+  "finishTime" : 1794110540.998,
+  "passedTests" : 841,
+  "result" : "Passed",
+  "skippedTests" : 0,
+  "startTime" : 1794110405.755,
+  "statistics" : [
+    {
+      "subtitle" : "234 test runs",
+      "title" : "41 tests ran with dynamic parameters"
+    }
+  ],
+  "testFailures" : [
+
+  ],
+  "title" : "Test - Tendelm",
+  "topInsights" : [
+
+  ],
+  "totalTestCount" : 842
+}
