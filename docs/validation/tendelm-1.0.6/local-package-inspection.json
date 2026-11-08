@@ -1,0 +1,24 @@
+{
+  "file": "C:\\Users\\naith\\Documents\\GitHub\\Tendelm\\.build\\artifacts\\ipa-1.0.6-6af019ac24e1ec237557698b\\Tendelm-1.0.6.ipa",
+  "bytes": 10779013,
+  "sha256": "ebe67f69a8153e6575f97fc9f2beb1d5bcff8ac5fe5025ca728463793eb087e6",
+  "version": "1.0.6",
+  "build": "7",
+  "minimum_os": "18.0",
+  "binaries": [
+    {
+      "bundle_id": "com.n3mostudio.tendelm",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "encrypted": false
+    },
+    {
+      "bundle_id": "com.n3mostudio.tendelm.TendelmWidgets",
+      "architecture": "arm64",
+      "platform": "iOS device",
+      "encrypted": false
+    }
+  ],
+  "provisioning": "No profile; personal signing required",
+  "zip_integrity": "passed"
+}

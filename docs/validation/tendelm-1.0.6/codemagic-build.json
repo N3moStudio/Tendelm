@@ -1,0 +1,9 @@
+{
+  "build_id": "6af019ac24e1ec237557698b",
+  "status": "finished",
+  "commit": "6d66826aae7fac5b1f02244e96d540413dbe9fea",
+  "workflow": "tendelm-validated-ipa",
+  "ipa_bytes": 10779013,
+  "started": "2026-11-08T06:50:42.749000+00:00",
+  "finished": "2026-11-08T06:52:25.301000+00:00"
+}

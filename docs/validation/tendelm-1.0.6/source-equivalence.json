@@ -1,0 +1,12 @@
+{
+  "result": "passed",
+  "tested_commit": "d205ded203d60346d0efa2b10048f1148b6b7e98",
+  "native_test_run": "6aeff00124e1ec2375576207",
+  "version": "1.0.6",
+  "build": "7",
+  "app_and_test_source": "identical",
+  "allowed_changes": "exact version/build bump, build tooling, documentation",
+  "unit_passed": 841,
+  "expected_issues": 1,
+  "ui_passed": 17
+}
