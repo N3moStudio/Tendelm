@@ -129,10 +129,22 @@ final class RecentlyDeletedUITests: TendelmUITestCase {
         tapTab(.settings, in: app)
         XCTAssertLessThan(app.buttons[AccessibilityID.Settings.appearanceRow].frame.height, app.frame.height * 0.85)
         capture(app, "20-grouped-settings-large-text")
+        app.buttons[AccessibilityID.Settings.appearanceRow].tap()
+        let classic = app.buttons[AccessibilityID.Settings.habitThemeRow("classic")].firstMatch
+        scrollTo(classic, in: app)
+        classic.tap()
+        XCTAssertTrue(classic.isSelected)
+        capture(app, "settings-kit-large-text-palette")
+        let glass = app.buttons["appearance.surface.liquidGlass"]
+        scrollTo(glass, in: app)
+        glass.tap()
+        XCTAssertTrue(glass.isSelected)
+        capture(app, "settings-kit-large-text-surface")
+        goBack(in: app)
         scrollTo(app.buttons["settings.importExport"], in: app)
         app.buttons["settings.importExport"].tap()
         XCTAssertTrue(app.buttons["backup.paste"].waitForExistence(timeout: 5))
-        XCTAssertLessThan(app.staticTexts["Paste backup text"].frame.height, app.frame.height * 0.3)
+        XCTAssertLessThan(app.staticTexts["Paste backup text"].firstMatch.frame.height, app.frame.height * 0.3)
         capture(app, "21-import-settings-large-text")
         scrollTo(app.links["json.site"].firstMatch, in: app)
     }
