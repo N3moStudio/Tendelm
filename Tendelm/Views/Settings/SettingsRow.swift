@@ -7,8 +7,7 @@ struct SettingsIcon: View {
         Image(systemName: symbol)
             .font(.system(size: 17, weight: .medium))
             .foregroundStyle(Color.kadoAccent)
-            .frame(width: 34, height: 36)
-            .background(Color.kadoAccentTint, in: RoundedRectangle(cornerRadius: 10))
+            .frame(width: 32, height: 32)
             .accessibilityHidden(true)
     }
 }
@@ -23,13 +22,14 @@ struct SettingsRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(title).foregroundStyle(Color.kadoForeground)
                 if let subtitle {
-                    Text(subtitle).font(.caption).foregroundStyle(Color.kadoForegroundSecondary)
+                    Text(subtitle).font(.subheadline).foregroundStyle(Color.kadoForegroundSecondary)
                 }
             }
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .layoutPriority(1)
         }.frame(minHeight: 44)
+            .accessibilityElement(children: .combine)
     }
 }
 
@@ -37,8 +37,7 @@ struct ImportExportSettingsView: View {
     var body: some View {
         BackupSettingsContainer { sections in
             Form { sections }
-                .scrollContentBackground(.hidden)
-                .background(Color.kadoBackground)
+                .tendelmSettingsPage()
                 .navigationTitle("Import & export")
                 .navigationBarTitleDisplayMode(.inline)
         }
@@ -48,8 +47,7 @@ struct ImportExportSettingsView: View {
 struct HabitCalendarSettingsView: View {
     var body: some View {
         Form { DayStartSection(); WeekStartSection() }
-            .scrollContentBackground(.hidden)
-            .background(Color.kadoBackground)
+            .tendelmSettingsPage()
             .navigationTitle("Day & week")
             .navigationBarTitleDisplayMode(.inline)
     }
@@ -58,8 +56,7 @@ struct HabitCalendarSettingsView: View {
 struct NotificationSettingsView: View {
     var body: some View {
         Form { NotificationsSection() }
-            .scrollContentBackground(.hidden)
-            .background(Color.kadoBackground)
+            .tendelmSettingsPage()
             .navigationTitle("Notifications")
             .navigationBarTitleDisplayMode(.inline)
     }
@@ -68,8 +65,7 @@ struct NotificationSettingsView: View {
 struct AdvancedSettingsView: View {
     var body: some View {
         Form { DevModeSection() }
-            .scrollContentBackground(.hidden)
-            .background(Color.kadoBackground)
+            .tendelmSettingsPage()
             .navigationTitle("Advanced")
             .navigationBarTitleDisplayMode(.inline)
     }

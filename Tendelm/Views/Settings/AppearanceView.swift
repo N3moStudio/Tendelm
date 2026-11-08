@@ -19,9 +19,10 @@ struct AppearanceView: View {
             }
             .listRowBackground(Color.kadoBackgroundSecondary)
             HabitThemeSection()
+            SettingsSurfaceSection()
         }
-        .scrollContentBackground(.hidden)
-        .background(Color.kadoBackground.ignoresSafeArea())
+        .tendelmSettingsPage()
+        .tendelmSettingsAppearance()
         .navigationTitle("Appearance")
         // Whichever way the user got here — Today's card or Settings —
         // they have found the screen, so Today stops announcing it.

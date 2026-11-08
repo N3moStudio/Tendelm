@@ -1,5 +1,19 @@
 # Private, manually started builds. No publishing, notifications or automatic triggers.
 workflows:
+  tendelm-settings-checks:
+    name: Tendelm settings simulator checks
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      xcode: latest
+    scripts:
+      - name: Validate settings without packaging
+        script: bash Scripts/check-settings.sh
+    artifacts:
+      - .settings-check-*/*.log
+      - .settings-check-*/*.json
+      - .settings-check-*/*.txt
+      - .settings-check-*/attachments/**/*
   tendelm-ipa:
     name: Tendelm private IPA
     instance_type: mac_mini_m2

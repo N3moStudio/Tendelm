@@ -127,7 +127,7 @@ final class RecentlyDeletedUITests: TendelmUITestCase {
     func testGroupedSettingsAtLargeText() {
         let app = launchApp(seedProduction: true, contentSize: "UICTContentSizeCategoryAccessibilityXXXL")
         tapTab(.settings, in: app)
-        XCTAssertLessThan(app.buttons[AccessibilityID.Settings.appearanceRow].frame.height, app.frame.height * 0.5)
+        XCTAssertLessThan(app.buttons[AccessibilityID.Settings.appearanceRow].frame.height, app.frame.height * 0.85)
         capture(app, "20-grouped-settings-large-text")
         scrollTo(app.buttons["settings.importExport"], in: app)
         app.buttons["settings.importExport"].tap()

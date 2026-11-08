@@ -3,36 +3,50 @@ import TendelmCore
 
 /// Each row chooses one palette. The dots are previews, not extra settings.
 struct HabitThemeSection: View {
+    @Environment(\.dynamicTypeSize) private var size
     @AppStorage(HabitThemeDefaults.key, store: HabitThemeDefaults.sharedDefaults)
     private var theme: HabitTheme = HabitThemeDefaults.defaultValue
 
     var body: some View {
         Section {
-            ForEach(HabitTheme.allCases, id: \.self) { option in
-                Button {
-                    theme = option
-                } label: {
-                    HStack(spacing: 12) {
-                        Text(option.name).foregroundStyle(Color.kadoForeground)
-                        Spacer(minLength: 8)
-                        HStack(spacing: 4) {
-                            ForEach([HabitColor.orange, .green, .blue], id: \.self) { color in
-                                Circle().fill(color.color(in: option)).frame(width: 12, height: 12)
+            LazyVGrid(columns: size.isAccessibilitySize
+                      ? [GridItem(.flexible())]
+                      : [GridItem(.adaptive(minimum: 140), spacing: 12)], spacing: 12) {
+                ForEach(HabitTheme.allCases, id: \.self) { option in
+                    Button {
+                        theme = option
+                    } label: {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                            HStack(spacing: 4) {
+                                ForEach([HabitColor.orange, .green, .blue], id: \.self) { color in
+                                    Circle().fill(color.color(in: option)).frame(width: 12, height: 12)
+                                }
                             }
+                            .accessibilityHidden(true)
+                            Spacer(minLength: 4)
+                            Image(systemName: option == theme ? "checkmark.circle.fill" : "circle")
+                                .fontWeight(.semibold).foregroundStyle(Color.kadoAccent)
+                                .accessibilityHidden(true)
+                            }
+                            Text(option.name).font(.subheadline.weight(.semibold))
+                                .foregroundStyle(Color.kadoForeground)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
-                        .accessibilityHidden(true)
-                        Image(systemName: "checkmark")
-                            .fontWeight(.semibold).foregroundStyle(Color.kadoAccent)
-                            .opacity(option == theme ? 1 : 0)
+                        .padding(12)
+                        .frame(maxWidth: .infinity, minHeight: 88, alignment: .leading)
+                        .background(Color.kadoBackground, in: RoundedRectangle(cornerRadius: 16))
+                        .overlay(RoundedRectangle(cornerRadius: 16)
+                            .strokeBorder(option == theme ? Color.kadoAccent : Color.kadoDivider, lineWidth: option == theme ? 2 : 1))
+                        .contentShape(RoundedRectangle(cornerRadius: 16))
                     }
-                    .frame(minHeight: 32)
-                    .contentShape(Rectangle())
+                    .buttonStyle(.plain)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text(option.name))
+                    .accessibilityAddTraits(option == theme ? [.isButton, .isSelected] : .isButton)
+                    .accessibilityIdentifier(AccessibilityID.Settings.habitThemeRow(option.rawValue))
                 }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(option.name))
-                .accessibilityAddTraits(option == theme ? [.isButton, .isSelected] : .isButton)
-                .accessibilityIdentifier(AccessibilityID.Settings.habitThemeRow(option.rawValue))
-            }
+            }.padding(.vertical, 8)
         } header: {
             Text("Color palette").foregroundStyle(Color.kadoForegroundSecondary)
         } footer: {

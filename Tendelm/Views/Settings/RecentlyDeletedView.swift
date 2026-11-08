@@ -67,8 +67,7 @@ struct RecentlyDeletedView: View {
                 }.accessibilityIdentifier("trash.confirmDelete")
             } message: { plan in Text("\(plan.names). This cannot be undone. Items outside Recently Deleted stay as they are.") }
         }
-        .scrollContentBackground(.hidden)
-        .background(Color.kadoBackground)
+        .tendelmSettingsPage()
         .navigationTitle("Recently Deleted")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

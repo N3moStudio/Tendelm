@@ -71,3 +71,6 @@ secrets.plist
 # Marketing site — assets/ is populated at deploy time from branding/ and
 # docs/screenshots/site/. See .github/workflows/pages.yml.
 site/assets/
+
+# Simulator-only settings validation evidence
+.settings-check-*/

@@ -3,7 +3,6 @@ import SwiftData
 import TendelmCore
 
 struct SettingsView: View {
-    @Environment(\.habitTheme) private var renderedTheme
     @Query(filter: #Predicate<HabitRecord> { $0.archivedAt != nil }) private var archived: [HabitRecord]
     @Query private var deleted: [RecentlyDeletedRecord]
 
@@ -16,9 +15,9 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Make it yours") {
+                Section {
                     NavigationLink { AppearanceView() } label: {
-                        SettingsRow(title: "Appearance", symbol: "paintpalette", subtitle: renderedTheme.name)
+                        SettingsIdentityLabel()
                     }.accessibilityIdentifier(AccessibilityID.Settings.appearanceRow)
                 }.listRowBackground(Color.kadoBackgroundSecondary)
                 Section("Your habits") {
@@ -48,7 +47,7 @@ struct SettingsView: View {
                 Section("About") {
                     NavigationLink {
                         Form { SupportSection() }
-                            .scrollContentBackground(.hidden).background(Color.kadoBackground)
+                            .tendelmSettingsPage()
                             .navigationTitle("About Tendelm").navigationBarTitleDisplayMode(.inline)
                     } label: { SettingsRow(title: "About Tendelm", symbol: "info.circle") }
                     NavigationLink { AdvancedSettingsView() } label: {
@@ -61,10 +60,11 @@ struct SettingsView: View {
                         .frame(maxWidth: .infinity).padding(.vertical, 12)
                 }
             }
-            .scrollContentBackground(.hidden)
-            .background(Color.kadoBackground.ignoresSafeArea())
+            .tendelmSettingsPage()
+            .contentMargins(.top, 16, for: .scrollContent)
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
         }
+        .tendelmSettingsAppearance()
     }
 }

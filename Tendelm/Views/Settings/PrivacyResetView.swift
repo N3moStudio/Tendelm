@@ -34,8 +34,7 @@ struct PrivacyResetView: View {
             }
             .listRowBackground(Color.kadoBackgroundSecondary)
         }
-        .scrollContentBackground(.hidden)
-        .background(Color.kadoBackground)
+        .tendelmSettingsPage()
         .navigationTitle("Privacy & reset")
         .navigationBarTitleDisplayMode(.inline)
         .alert("Reset not complete", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {

@@ -37,8 +37,7 @@ struct ArchivedHabitsView: View {
 
     var body: some View {
         content
-            .scrollContentBackground(.hidden)
-            .background(Color.kadoBackground.ignoresSafeArea())
+            .tendelmSettingsPage()
             .navigationTitle(Text("Archived habits"))
             .confirmationDialog(
                 deleteDialogTitle,

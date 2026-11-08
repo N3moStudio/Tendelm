@@ -123,8 +123,7 @@ struct ExternalImportView: View {
             }
             .listRowBackground(Color.kadoBackgroundSecondary)
         }
-        .scrollContentBackground(.hidden)
-        .background(Color.kadoBackground)
+        .tendelmSettingsPage()
         .navigationTitle("Import history")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $helper) { ImportHelperBrowser(site: $0) }
