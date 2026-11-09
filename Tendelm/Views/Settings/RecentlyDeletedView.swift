@@ -13,7 +13,6 @@ struct RecentlyDeletedView: View {
     @State private var error: String?
     @State private var rowFrames: [UUID: CGRect] = [:]
     @State private var sweep: DeletedSelectionSweep?
-    private let selectionSpace = "trash.selection"
     #if DEBUG
     @State private var selectionDiagnostic = "No hold received"
     #endif
@@ -43,11 +42,11 @@ struct RecentlyDeletedView: View {
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .gesture(SelectionHoldGesture(space: selectionSpace) { state, location in
+                        .gesture(SelectionHoldGesture { state, location in
                             updateSelection(from: item.id, state: state, location: location)
                         })
                         .onGeometryChange(for: CGRect.self) { geometry in
-                            geometry.frame(in: .named(selectionSpace))
+                            geometry.frame(in: .global)
                         } action: { frame in rowFrames[item.id] = frame }
                         .onDisappear { rowFrames.removeValue(forKey: item.id) }
                         .accessibilityHint("Hold, then drag to select several items.")
@@ -90,7 +89,6 @@ struct RecentlyDeletedView: View {
                 }.accessibilityIdentifier("trash.confirmDelete")
             } message: { plan in Text("\(plan.names). This cannot be undone. Items outside Recently Deleted stay as they are.") }
         }
-        .coordinateSpace(name: selectionSpace)
         .onDisappear { sweep = nil; rowFrames = [:] }
         .tendelmSettingsPage()
         .navigationTitle("Recently Deleted")
@@ -141,7 +139,7 @@ struct RecentlyDeletedView: View {
 
     private func updateSelection(from anchor: UUID, state: UIGestureRecognizer.State, location: CGPoint) {
         #if DEBUG
-        selectionDiagnostic = "state \(state.rawValue), y \(Int(location.y.isFinite ? location.y : 0)), selected \(selected.count)"
+        selectionDiagnostic = "state \(state.rawValue), y \(Int(location.y.isFinite ? location.y : 0)), selected \(selected.count), rows \(rowFrames.values.map { Int($0.midY) }.sorted())"
         #endif
         guard selecting, deletion == nil, location.y.isFinite else { sweep = nil; return }
         switch state {

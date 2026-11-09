@@ -4,7 +4,6 @@ import UIKit
 /// A continuous native long press tracks the finger after recognition, including
 /// outside its starting row. A normal drag can still scroll before the hold wins.
 struct SelectionHoldGesture: UIGestureRecognizerRepresentable {
-    let space: String
     let changed: (UIGestureRecognizer.State, CGPoint) -> Void
 
     func makeUIGestureRecognizer(context: Context) -> UILongPressGestureRecognizer {
@@ -30,6 +29,8 @@ struct SelectionHoldGesture: UIGestureRecognizerRepresentable {
     }
 
     func handleUIGestureRecognizerAction(_ recognizer: UILongPressGestureRecognizer, context: Context) {
-        changed(recognizer.state, context.converter.location(in: .named(space)))
+        // List cells have separate hosting roots: named converter coordinates
+        // can include a different safe-area offset. Both sides use window space.
+        changed(recognizer.state, recognizer.location(in: nil))
     }
 }
