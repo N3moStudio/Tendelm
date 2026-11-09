@@ -235,7 +235,7 @@ nonisolated public enum HabitTheme: String, CaseIterable, Codable, Sendable, Has
         switch color {
         case .red: (OKLCH(l: 0.50, c: 0.12, h: 35), OKLCH(l: 0.64, c: 0.12, h: 35))
         case .orange: (OKLCH(l: 0.64, c: 0.13, h: 48), OKLCH(l: 0.76, c: 0.13, h: 48))
-        case .yellow: (OKLCH(l: 0.80, c: 0.12, h: 72), OKLCH(l: 0.86, c: 0.12, h: 72))
+        case .yellow: (OKLCH(l: 0.80, c: 0.12, h: 72), OKLCH(l: 0.84, c: 0.12, h: 72))
         case .green: (OKLCH(l: 0.64, c: 0.10, h: 120), OKLCH(l: 0.74, c: 0.10, h: 120))
         case .mint: (OKLCH(l: 0.78, c: 0.085, h: 135), OKLCH(l: 0.88, c: 0.085, h: 135))
         case .teal: (OKLCH(l: 0.52, c: 0.11, h: 148), OKLCH(l: 0.64, c: 0.11, h: 148))

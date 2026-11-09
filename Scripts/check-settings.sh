@@ -22,6 +22,14 @@ trap finish EXIT
 run() {
   local name=$1
   shift
+  # This runner belongs to this build. Never stop another Xcode process.
+  if pgrep -lx xcodebuild > "$out/$name-processes.log"; then
+    echo "Another Xcode build is active; see $name-processes.log." >&2
+    return 1
+  else
+    local inventory_status=$?
+    [[ "$inventory_status" == 1 ]] || return "$inventory_status"
+  fi
   if xcodebuild "$@" > "$out/$name.log" 2>&1; then
     if command -v xcsift >/dev/null; then xcsift < "$out/$name.log" || tail -30 "$out/$name.log"; else tail -30 "$out/$name.log"; fi
   else
