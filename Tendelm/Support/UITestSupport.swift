@@ -182,7 +182,7 @@ nonisolated enum UITestSupport {
         if arguments.contains(Argument.resetState) {
             HabitThemeDefaults.sharedDefaults.removeObject(forKey: HabitThemeDefaults.key)
             UserDefaults.standard.removeObject(forKey: "personal.appearance")
-            UserDefaults.standard.removeObject(forKey: SettingsSurfaceDefaults.key)
+            UserDefaults.standard.removeObject(forKey: "personal.settingsSurface")
         }
         if let index = arguments.firstIndex(of: Argument.habitTheme),
            arguments.indices.contains(index + 1),
