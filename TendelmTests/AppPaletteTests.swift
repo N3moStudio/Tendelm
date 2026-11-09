@@ -37,6 +37,23 @@ struct AppPaletteTests {
         }
     }
 
+    @Test func unscheduledCalendarCellsStayQuieterThanScoredCells() {
+        for theme in HabitTheme.selectable {
+            for dark in [false, true] {
+                let empty = lightness(rgba(.kadoCalendarEmpty, theme, dark))
+                for color in HabitColor.allCases {
+                    let scored = lightness(rgba(color.tint(.tileLight, in: theme), theme, dark))
+                    #expect(dark ? empty < scored : empty > scored,
+                            "Unscheduled day should be quiet: \(theme), \(color), dark: \(dark)")
+                }
+            }
+        }
+    }
+
+    private func lightness(_ rgba: [Double]) -> Double {
+        Oklab(srgbRed: rgba[0], green: rgba[1], blue: rgba[2]).l
+    }
+
     private func rgba(_ color: Color, _ theme: HabitTheme, _ dark: Bool) -> [Double] {
         let traits = UITraitCollection { traits in
             traits.userInterfaceStyle = dark ? .dark : .light

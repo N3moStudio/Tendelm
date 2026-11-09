@@ -21,12 +21,11 @@ private struct HabitThemeKey: UITraitBridgedEnvironmentKey {
 }
 
 public extension EnvironmentValues {
-    /// The habit colour theme views paint every `HabitColor` in.
-    /// `TendelmApp` injects the stored choice at the root and each widget
-    /// injects it from `HabitThemeDefaults`, so a switch in Settings
-    /// re-renders every reader — which a global `HabitColor.color`
-    /// read implicitly could not do without an `.id(...)` remount.
-    var habitTheme: HabitTheme {
+    /// SwiftUI state remains independent of UIKit's inherited trait defaults.
+    @Entry var habitTheme: HabitTheme = HabitThemeDefaults.defaultValue
+
+    /// UIKit's window trait is also visible during SwiftUI color resolution.
+    var appPaletteTrait: HabitTheme {
         get { self[HabitThemeKey.self] }
         set { self[HabitThemeKey.self] = newValue }
     }

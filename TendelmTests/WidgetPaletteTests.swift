@@ -32,7 +32,14 @@ struct WidgetPaletteTests {
         #expect(palette.foreground == .kadoForeground)
         #expect(palette.foregroundSecondary == .kadoForegroundSecondary)
         #expect(palette.restingFill == .kadoHairline)
-        #expect(palette.notDueFill == .kadoHairline)
+        if theme.current == .kado {
+            #expect(palette.notDueFill == .kadoHairline)
+        } else {
+            for style in [UIUserInterfaceStyle.light, .dark] {
+                #expect(channels(of: palette.notDueFill, style)
+                    == channels(of: Color.kadoCalendarEmpty.inPalette(theme), style))
+            }
+        }
     }
 
     /// The `.partial` curve is the one arm that was physically moved

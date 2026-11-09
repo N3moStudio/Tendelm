@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import SwiftData
 import TendelmCore
 
@@ -12,7 +13,6 @@ struct RecentlyDeletedView: View {
     @State private var error: String?
     @State private var rowFrames: [UUID: CGRect] = [:]
     @State private var sweep: DeletedSelectionSweep?
-    @GestureState private var sweepActive = false
     private let selectionSpace = "trash.selection"
 
     private struct Deletion: Identifiable {
@@ -40,7 +40,9 @@ struct RecentlyDeletedView: View {
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .highPriorityGesture(selectionDrag(from: item.id))
+                        .gesture(SelectionHoldGesture(space: selectionSpace) { state, location in
+                            updateSelection(from: item.id, state: state, location: location)
+                        })
                         .background {
                             GeometryReader { geometry in
                                 Color.clear.preference(key: DeletedSelectionFrames.self,
@@ -89,7 +91,6 @@ struct RecentlyDeletedView: View {
         }
         .coordinateSpace(name: selectionSpace)
         .onPreferenceChange(DeletedSelectionFrames.self) { rowFrames = $0 }
-        .onChange(of: sweepActive) { _, active in if !active { sweep = nil } }
         .onDisappear { sweep = nil; rowFrames = [:] }
         .tendelmSettingsPage()
         .navigationTitle("Recently Deleted")
@@ -134,25 +135,20 @@ struct RecentlyDeletedView: View {
     }
 
 
-    private func selectionDrag(from anchor: UUID) -> some Gesture {
-        LongPressGesture(minimumDuration: 0.35, maximumDistance: 12)
-            .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .named(selectionSpace)))
-            .updating($sweepActive) { value, active, _ in
-                if case .second(true, _) = value { active = true }
-            }
-            .onChanged { value in
-                guard selecting, deletion == nil, case .second(true, let drag) = value else { return }
-                let ids = visible.map(\.id)
-                if sweep == nil { sweep = DeletedSelectionSweep(anchor: anchor, orderedIDs: ids, selectedIDs: selected) }
-                let available = Set(ids)
-                let target = drag.flatMap { drag -> UUID? in
-                    guard drag.location.y.isFinite else { return nil }
-                    return rowFrames.filter { available.contains($0.key) && $0.value.midY.isFinite }
-                        .min { abs($0.value.midY - drag.location.y) < abs($1.value.midY - drag.location.y) }?.key
-                } ?? anchor
-                if let next = sweep?.selection(through: target), next != selected { selected = next }
-            }
-            .onEnded { _ in sweep = nil }
+    private func updateSelection(from anchor: UUID, state: UIGestureRecognizer.State, location: CGPoint) {
+        guard selecting, deletion == nil, location.y.isFinite else { sweep = nil; return }
+        switch state {
+        case .began, .changed, .ended:
+            let ids = visible.map(\.id)
+            if sweep == nil { sweep = DeletedSelectionSweep(anchor: anchor, orderedIDs: ids, selectedIDs: selected) }
+            let available = Set(ids)
+            let target = rowFrames.filter { available.contains($0.key) && $0.value.midY.isFinite }
+                .min { abs($0.value.midY - location.y) < abs($1.value.midY - location.y) }?.key ?? anchor
+            if let next = sweep?.selection(through: target), next != selected { selected = next }
+            if state == .ended { sweep = nil }
+        default:
+            sweep = nil
+        }
     }
 
     private func label(_ item: RecentlyDeletedRecord) -> some View {

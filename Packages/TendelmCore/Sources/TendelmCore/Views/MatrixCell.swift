@@ -60,7 +60,7 @@ public struct MatrixCell: View {
         case .future:
             Color.clear
         case .notDue, .beforeStart:
-            Color.kadoBackgroundSecondary
+            Color.kadoCalendarEmpty
         case .scored:
             color.tint(state.colorOpacity ?? 0, in: habitTheme)
         case .offSchedule:

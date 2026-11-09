@@ -7,11 +7,16 @@ import UIKit
 /// configures the nav bar + tab bar appearance once.
 public struct TendelmThemeModifier: ViewModifier {
 
+    @Environment(\.habitTheme) private var theme
+    @Environment(\.appPaletteTrait) private var paletteTrait
+
     public init() {}
 
     public func body(content: Content) -> some View {
+        let _ = paletteTrait // Observe the native color-trait change without replacing views.
         content
-            .tint(.kadoSage)
+            .tint(Color.kadoSage.inPalette(theme))
+            .background(PaletteTraitInstaller(theme: theme))
             .background(Color.kadoBackground.ignoresSafeArea())
             .scrollContentBackground(.hidden)
             .onAppear(perform: Self.applyUIKitAppearance)

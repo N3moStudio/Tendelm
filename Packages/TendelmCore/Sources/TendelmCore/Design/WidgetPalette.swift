@@ -99,7 +99,8 @@ public struct WidgetPalette {
     /// missed — the tint having erased the hue that told them apart in
     /// full colour.
     public var notDueFill: Color {
-        isTinted ? .primary.opacity(0.08) : .kadoHairline
+        if isTinted { return .primary.opacity(0.08) }
+        return theme.current == .kado ? .kadoHairline : .kadoCalendarEmpty.inPalette(theme)
     }
 
     /// The 1pt ring around a never-due day, one paper step darker than

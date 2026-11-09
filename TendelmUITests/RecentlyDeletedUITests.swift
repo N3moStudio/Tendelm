@@ -44,6 +44,27 @@ final class RecentlyDeletedUITests: TendelmUITestCase {
     }
 
     @MainActor
+    func testHoldAndDragSelectsAndDeselectsMultipleRows() {
+        let app = launchApp(seedProduction: true, seedRecentlyDeleted: true)
+        openSettingsPage("settings.recentlyDeleted", in: app)
+        app.buttons["trash.select"].tap()
+        let rows = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'trash.select.'"))
+        XCTAssertEqual(rows.count, 3)
+        let first = rows.element(boundBy: 0)
+        let last = rows.element(boundBy: 2)
+        first.press(forDuration: 0.7, thenDragTo: last)
+        capture(app, "recently-deleted-drag-selection")
+        XCTAssertEqual(app.buttons["trash.deleteSelected"].label, "Delete (3)")
+        last.press(forDuration: 0.7, thenDragTo: first)
+        XCTAssertEqual(app.buttons["trash.deleteSelected"].label, "Delete All")
+        first.tap()
+        XCTAssertEqual(app.buttons["trash.deleteSelected"].label, "Delete (1)")
+        app.buttons["trash.select"].tap()
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'trash.restore.'")).count, 3,
+                       "Selecting never restores or deletes records.")
+    }
+
+    @MainActor
     func testCardsAndOverviewDeleteSelection() {
         let app = launchApp(seedProduction: true)
         waitForTodayRows(in: app)
@@ -66,15 +87,6 @@ final class RecentlyDeletedUITests: TendelmUITestCase {
         XCTAssertTrue(app.descendants(matching: .any)[labelID].firstMatch.waitForNonExistence(timeout: 5))
         openSettingsPage("settings.recentlyDeleted", in: app)
         app.buttons["trash.select"].tap()
-        let rows = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'trash.select.'"))
-        XCTAssertEqual(rows.count, 2)
-        let firstSelection = rows.element(boundBy: 0)
-        let lastSelection = rows.element(boundBy: 1)
-        firstSelection.press(forDuration: 0.6, thenDragTo: lastSelection)
-        XCTAssertEqual(app.buttons["trash.deleteSelected"].label, "Delete (2)")
-        capture(app, "recently-deleted-drag-selection")
-        lastSelection.press(forDuration: 0.6, thenDragTo: firstSelection)
-        XCTAssertEqual(app.buttons["trash.deleteSelected"].label, "Delete All", "Dragging from a selected row deselects the range.")
         app.buttons["trash.selectAll"].tap()
         XCTAssertEqual(app.buttons["trash.selectAll"].label, "Deselect All")
         app.buttons["trash.selectAll"].tap()

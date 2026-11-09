@@ -312,6 +312,12 @@ nonisolated enum UITestSupport {
             DevModeSeed.seed(into: context)
         }
         archiveFirstHabitIfRequested(using: context)
+        if ProcessInfo.processInfo.arguments.contains("-uiTestSeedRecentlyDeleted") {
+            do {
+                let habits = try context.fetch(FetchDescriptor<HabitRecord>()).prefix(3)
+                for habit in habits { try RecentlyDeletedStore().moveHabit(id: habit.id, in: context) }
+            } catch { assertionFailure("Recovery fixture failed: \(error)") }
+        }
         let arguments = ProcessInfo.processInfo.arguments
         if let index = arguments.firstIndex(of: "-uiTestScheduledStartOffset"),
            arguments.indices.contains(index + 1), let offset = Double(arguments[index + 1]) {

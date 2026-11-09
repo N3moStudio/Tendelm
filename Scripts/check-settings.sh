@@ -47,9 +47,14 @@ xcrun simctl bootstatus "$phone" -b
 xcrun simctl ui "$phone" appearance light
 run unit test -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=iOS Simulator,id=$phone" \
   -derivedDataPath "$out/DerivedData" -resultBundlePath "$out/Unit.xcresult" -only-testing:TendelmTests CODE_SIGNING_ALLOWED=NO
+run interactions test-without-building -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=iOS Simulator,id=$phone" \
+  -derivedDataPath "$out/DerivedData" -resultBundlePath "$out/Interactions.xcresult" \
+  -only-testing:TendelmUITests/HabitThemePickerTests \
+  -only-testing:TendelmUITests/RecentlyDeletedUITests/testHoldAndDragSelectsAndDeselectsMultipleRows \
+  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO
 run settings test-without-building -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=iOS Simulator,id=$phone" \
   -derivedDataPath "$out/DerivedData" -resultBundlePath "$out/Settings.xcresult" \
-  -only-testing:TendelmUITests/SettingsPresentationUITests -only-testing:TendelmUITests/HabitThemePickerTests \
+  -only-testing:TendelmUITests/SettingsPresentationUITests \
   -only-testing:TendelmUITests/PasteImportTests -only-testing:TendelmUITests/DayStartPickerTests \
   -only-testing:TendelmUITests/DevModeSwapTests \
   -only-testing:TendelmUITests/RecentlyDeletedUITests/testGroupedSettingsAtLargeText \

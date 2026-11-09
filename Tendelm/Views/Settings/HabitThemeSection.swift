@@ -26,18 +26,18 @@ struct HabitThemeSection: View {
                             .accessibilityHidden(true)
                             Spacer(minLength: 4)
                             Image(systemName: option == theme.current ? "checkmark.circle.fill" : "circle")
-                                .fontWeight(.semibold).foregroundStyle(Color.kadoAccent)
+                                .fontWeight(.semibold).foregroundStyle(Color.kadoAccent.inPalette(option))
                                 .accessibilityHidden(true)
                             }
                             Text(option.name).font(.subheadline.weight(.semibold))
-                                .foregroundStyle(Color.kadoForeground)
+                                .foregroundStyle(Color.kadoForeground.inPalette(option))
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         .padding(12)
                         .frame(maxWidth: .infinity, minHeight: 88, alignment: .leading)
-                        .background(Color.kadoBackground, in: RoundedRectangle(cornerRadius: 16))
+                        .background(Color.kadoBackground.inPalette(option), in: RoundedRectangle(cornerRadius: 16))
                         .overlay(RoundedRectangle(cornerRadius: 16)
-                            .strokeBorder(option == theme.current ? Color.kadoAccent : Color.kadoDivider, lineWidth: option == theme.current ? 2 : 1))
+                            .strokeBorder(option == theme.current ? Color.kadoAccent.inPalette(option) : Color.kadoDivider.inPalette(option), lineWidth: option == theme.current ? 2 : 1))
                         .contentShape(RoundedRectangle(cornerRadius: 16))
                     }
                     .environment(\.habitTheme, option)

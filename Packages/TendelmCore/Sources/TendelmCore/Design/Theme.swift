@@ -11,6 +11,16 @@ public extension Color {
     }
 
 
+    /// Explicit palette for previews and controls that resolve outside the
+    /// window's trait hierarchy. Display mode remains dynamic.
+    func inPalette(_ theme: HabitTheme) -> Color {
+        Color(UIColor { traits in
+            UIColor(self).resolvedColor(with: traits.modifyingTraits {
+                $0[HabitThemeTrait.self] = theme.current
+            })
+        })
+    }
+
     // MARK: - Paper (surfaces)
     static let kadoPaper50  = Color(role: .paper50, light: rgb(0.984, 0.973, 0.949), dark: rgb(0.078, 0.075, 0.059))
     static let kadoPaper100 = Color(role: .paper100, light: rgb(0.957, 0.937, 0.902), dark: rgb(0.110, 0.102, 0.086))
@@ -42,6 +52,14 @@ public extension Color {
     static let kadoForegroundTertiary  = kadoInk300
     static let kadoAccent              = kadoSage
     static let kadoAccentTint          = kadoSage100
+
+    /// Tinted cards can be stronger than a heatmap's faintest scored cell.
+    /// Keep unscheduled days quiet, with Tendelm's original treatment intact.
+    static let kadoCalendarEmpty = Color(UIColor { trait in
+        let base: Color = trait[HabitThemeTrait.self].current == .kado
+            ? .kadoBackgroundSecondary : .kadoBackground
+        return UIColor(base).resolvedColor(with: trait)
+    })
 }
 
 /// Corner radii. `card` is the default for habit rows and cells.

@@ -73,6 +73,7 @@ class TendelmUITestCase: XCTestCase {
         tipNudgeReady: Bool = false,
         iCloudAvailable: Bool = false,
         seedTimeSince: Bool = false,
+        seedRecentlyDeleted: Bool = false,
         contentSize: String? = nil,
         scheduledStartOffset: TimeInterval? = nil,
         clipboardText: String? = nil
@@ -82,6 +83,7 @@ class TendelmUITestCase: XCTestCase {
         app.launchArguments = ["-uiTestRun"]
         if let scheduledStartOffset { app.launchArguments += ["-uiTestScheduledStartOffset", String(scheduledStartOffset)] }
         if seedTimeSince { app.launchArguments.append("-uiTestSeedTimeSince") }
+        if seedRecentlyDeleted { app.launchArguments.append("-uiTestSeedRecentlyDeleted") }
         if let contentSize { app.launchArguments += ["-UIPreferredContentSizeCategoryName", contentSize] }
 
         if resetState {

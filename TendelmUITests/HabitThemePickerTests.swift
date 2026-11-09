@@ -113,7 +113,7 @@ final class HabitThemePickerTests: TendelmUITestCase {
     /// `navigationDestination` in the wrong place is silently ignored.
     @MainActor
     func testEveryPaletteIsSelectableInPersonalEdition() {
-        let app = launchApp()
+        let app = launchApp(seedProduction: true, seedForScreenshots: true)
         openAppearance(in: app)
         var paintedPages = Set<Data>()
         for theme in ["muted", "autumn", "monochromeSage", "kado"] {
@@ -127,6 +127,9 @@ final class HabitThemePickerTests: TendelmUITestCase {
             XCTAssertNotNil(pixels)
             if let pixels { paintedPages.insert(pixels) }
             capture(app, "palette-page-\(theme)")
+            tapTab(.overview, in: app)
+            capture(app, "palette-overview-\(theme)")
+            tapTab(.settings, in: app)
         }
         XCTAssertEqual(paintedPages.count, 4, "Every palette must visibly recolor the page.")
         XCTAssertFalse(themeRow("classic", in: app).exists)
