@@ -10,13 +10,13 @@ import Foundation
 /// — the ink on a tint, the tints and ramps, the glyph on a fill —
 /// derives from them by the same rules for every theme
 /// (`HabitColor`), so a theme cannot ship a surface the palette tests
-/// haven't swept. It touches habit hues only: the paper / ink / sage
-/// brand is the same under every theme.
+/// haven't swept. AppPalette also supplies the matching semantic page,
+/// text and accent colors; Tendelm keeps its original cream/sage identity.
 ///
 /// Raw values are stored in `UserDefaults` (`HabitThemeDefaults`), so
 /// they stay stable strings. What is stored is the user's *pick*;
 /// what renders is `HabitTheme.effective(preferred:isSupporter:)`,
-/// since every theme after Classic needs the Supporter pack.
+/// with retired choices mapped by current without rewriting saved values.
 nonisolated public enum HabitTheme: String, CaseIterable, Codable, Sendable, Hashable {
     /// The OKLCH palette at matched lightness and chroma (#89). The
     /// default.
@@ -33,6 +33,15 @@ nonisolated public enum HabitTheme: String, CaseIterable, Codable, Sendable, Has
     /// One hue, the brand sage, told apart by lightness alone.
     /// Supporter pack.
     case monochromeSage
+
+    /// Retired choices remain decodable for older preferences and backups.
+    public static let selectable: [HabitTheme] = [.kado, .muted, .autumn, .monochromeSage]
+    public var current: HabitTheme {
+        switch self {
+        case .classic, .vivid: .kado
+        default: self
+        }
+    }
 
     /// The slot's light-mode base.
     public func base(for color: HabitColor) -> OKLCH {
@@ -224,11 +233,11 @@ nonisolated public enum HabitTheme: String, CaseIterable, Codable, Sendable, Has
     /// and H; amber stops at 0.84, where sRGB still shows its chroma.
     private static func autumnBase(_ color: HabitColor) -> (light: OKLCH, dark: OKLCH) {
         switch color {
-        case .red: (OKLCH(l: 0.52, c: 0.14, h: 38), OKLCH(l: 0.64, c: 0.14, h: 38))
-        case .orange: (OKLCH(l: 0.66, c: 0.16, h: 52), OKLCH(l: 0.76, c: 0.15, h: 52))
-        case .yellow: (OKLCH(l: 0.80, c: 0.14, h: 72), OKLCH(l: 0.84, c: 0.13, h: 72))
-        case .green: (OKLCH(l: 0.64, c: 0.13, h: 122), OKLCH(l: 0.74, c: 0.13, h: 122))
-        case .mint: (OKLCH(l: 0.76, c: 0.12, h: 132), OKLCH(l: 0.86, c: 0.12, h: 132))
+        case .red: (OKLCH(l: 0.50, c: 0.12, h: 35), OKLCH(l: 0.64, c: 0.12, h: 35))
+        case .orange: (OKLCH(l: 0.64, c: 0.13, h: 48), OKLCH(l: 0.76, c: 0.13, h: 48))
+        case .yellow: (OKLCH(l: 0.80, c: 0.12, h: 72), OKLCH(l: 0.86, c: 0.12, h: 72))
+        case .green: (OKLCH(l: 0.64, c: 0.10, h: 120), OKLCH(l: 0.74, c: 0.10, h: 120))
+        case .mint: (OKLCH(l: 0.78, c: 0.085, h: 135), OKLCH(l: 0.88, c: 0.085, h: 135))
         case .teal: (OKLCH(l: 0.52, c: 0.11, h: 148), OKLCH(l: 0.64, c: 0.11, h: 148))
         case .blue: (OKLCH(l: 0.40, c: 0.07, h: 160), OKLCH(l: 0.52, c: 0.07, h: 160))
         case .purple: (OKLCH(l: 0.42, c: 0.09, h: 50), OKLCH(l: 0.54, c: 0.09, h: 50))

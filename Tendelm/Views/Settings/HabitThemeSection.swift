@@ -12,7 +12,7 @@ struct HabitThemeSection: View {
             LazyVGrid(columns: size.isAccessibilitySize
                       ? [GridItem(.flexible())]
                       : [GridItem(.adaptive(minimum: 140), spacing: 12)], spacing: 12) {
-                ForEach(HabitTheme.allCases, id: \.self) { option in
+                ForEach(HabitTheme.selectable, id: \.self) { option in
                     Button {
                         theme = option
                     } label: {
@@ -25,7 +25,7 @@ struct HabitThemeSection: View {
                             }
                             .accessibilityHidden(true)
                             Spacer(minLength: 4)
-                            Image(systemName: option == theme ? "checkmark.circle.fill" : "circle")
+                            Image(systemName: option == theme.current ? "checkmark.circle.fill" : "circle")
                                 .fontWeight(.semibold).foregroundStyle(Color.kadoAccent)
                                 .accessibilityHidden(true)
                             }
@@ -37,20 +37,21 @@ struct HabitThemeSection: View {
                         .frame(maxWidth: .infinity, minHeight: 88, alignment: .leading)
                         .background(Color.kadoBackground, in: RoundedRectangle(cornerRadius: 16))
                         .overlay(RoundedRectangle(cornerRadius: 16)
-                            .strokeBorder(option == theme ? Color.kadoAccent : Color.kadoDivider, lineWidth: option == theme ? 2 : 1))
+                            .strokeBorder(option == theme.current ? Color.kadoAccent : Color.kadoDivider, lineWidth: option == theme.current ? 2 : 1))
                         .contentShape(RoundedRectangle(cornerRadius: 16))
                     }
+                    .environment(\.habitTheme, option)
                     .buttonStyle(.plain)
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(Text(option.name))
-                    .accessibilityAddTraits(option == theme ? [.isButton, .isSelected] : .isButton)
+                    .accessibilityAddTraits(option == theme.current ? [.isButton, .isSelected] : .isButton)
                     .accessibilityIdentifier(AccessibilityID.Settings.habitThemeRow(option.rawValue))
                 }
             }.padding(.vertical, 8)
         } header: {
             Text("Color palette").foregroundStyle(Color.kadoForegroundSecondary)
         } footer: {
-            Text("Changes the colors of your habits and trackers. The dots are previews; choose an individual color when editing a habit or tracker.")
+            Text("Changes page colors, accents, habits and trackers. The dots preview each palette. Your individual habit colors stay saved.")
                 .foregroundStyle(Color.kadoForegroundSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }

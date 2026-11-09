@@ -73,7 +73,7 @@ struct TendelmApp: App {
     /// needs a Supporter pack this device doesn't own. Read from the
     /// live store, so a purchase, restore or refund repaints at once.
     private var renderedHabitTheme: HabitTheme {
-        HabitTheme.effective(preferred: habitTheme, isSupporter: supporterPack.isSupporter)
+        HabitTheme.effective(preferred: habitTheme, isSupporter: supporterPack.isSupporter).current
     }
 
     /// Puts the Home Screen icon back in line with the pick and the

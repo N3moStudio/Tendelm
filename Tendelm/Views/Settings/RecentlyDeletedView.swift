@@ -10,6 +10,10 @@ struct RecentlyDeletedView: View {
     @State private var selected: Set<UUID> = []
     @State private var deletion: Deletion?
     @State private var error: String?
+    @State private var rowFrames: [UUID: CGRect] = [:]
+    @State private var sweep: DeletedSelectionSweep?
+    @GestureState private var sweepActive = false
+    private let selectionSpace = "trash.selection"
 
     private struct Deletion: Identifiable {
         let id = UUID()
@@ -36,6 +40,14 @@ struct RecentlyDeletedView: View {
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
+                        .highPriorityGesture(selectionDrag(from: item.id))
+                        .background {
+                            GeometryReader { geometry in
+                                Color.clear.preference(key: DeletedSelectionFrames.self,
+                                    value: [item.id: geometry.frame(in: .named(selectionSpace))])
+                            }
+                        }
+                        .accessibilityHint("Hold, then drag to select several items.")
                         .accessibilityValue(selected.contains(item.id) ? "Selected" : "Not selected")
                         .accessibilityAddTraits(selected.contains(item.id) ? .isSelected : [])
                         .accessibilityIdentifier("trash.select.\(item.id)")
@@ -53,9 +65,17 @@ struct RecentlyDeletedView: View {
                                     .accessibilityIdentifier("trash.delete.\(item.id)")
                             }.buttonStyle(.borderless).frame(minHeight: 44)
                         }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            // No destructive role here: wait for confirmation before
+                            // List animates the row away. The alert owns deletion.
+                            Button("Delete", systemImage: "trash") { review([item.id]) }
+                                .tint(.red).accessibilityIdentifier("trash.swipeDelete.\(item.id)")
+                            Button("Restore", systemImage: "arrow.uturn.backward") { restore([item.id]) }
+                                .tint(Color.kadoAccent).accessibilityIdentifier("trash.swipeRestore.\(item.id)")
+                        }
                     }
                 }
-            } footer: { Text("Kept for 30 days. Restoring brings back the item and its history.") }
+            } footer: { Text(selecting ? "Hold an item, then drag up or down to select several. Kept for 30 days." : "Kept for 30 days. Restoring brings back the item and its history.") }
             .listRowBackground(Color.kadoBackgroundSecondary)
             .alert("Permanently delete \(deletion?.ids.count ?? 0) \(deletion?.ids.count == 1 ? "item" : "items")?",
                    isPresented: Binding(get: { deletion != nil }, set: { if !$0 { deletion = nil } }), presenting: deletion) { plan in
@@ -67,12 +87,16 @@ struct RecentlyDeletedView: View {
                 }.accessibilityIdentifier("trash.confirmDelete")
             } message: { plan in Text("\(plan.names). This cannot be undone. Items outside Recently Deleted stay as they are.") }
         }
+        .coordinateSpace(name: selectionSpace)
+        .onPreferenceChange(DeletedSelectionFrames.self) { rowFrames = $0 }
+        .onChange(of: sweepActive) { _, active in if !active { sweep = nil } }
+        .onDisappear { sweep = nil; rowFrames = [:] }
         .tendelmSettingsPage()
         .navigationTitle("Recently Deleted")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button(selecting ? "Done" : "Select") { selecting.toggle(); selected.removeAll() }
+                Button(selecting ? "Done" : "Select") { sweep = nil; selecting.toggle(); selected.removeAll(); rowFrames = [:] }
                     .disabled(!selecting && visible.isEmpty)
                     .accessibilityIdentifier("trash.select")
             }
@@ -82,6 +106,7 @@ struct RecentlyDeletedView: View {
                 let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 8)) : AnyLayout(HStackLayout(spacing: 16))
                 layout {
                     Button {
+                        sweep = nil
                         selected = selected.count == visible.count ? [] : Set(visible.map(\.id))
                     } label: { Text(selected.count == visible.count ? "Deselect All" : "Select All").frame(minHeight: 44) }
                     .accessibilityIdentifier("trash.selectAll")
@@ -102,10 +127,32 @@ struct RecentlyDeletedView: View {
             }
         }
         .onAppear(perform: prune)
-        .onChange(of: records.map(\.id)) { _, ids in selected.formIntersection(ids) }
+        .onChange(of: records.map(\.id)) { _, ids in sweep = nil; selected.formIntersection(ids) }
         .alert("Couldn't update Recently Deleted", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("OK", role: .cancel) {}
         } message: { Text(error ?? "") }
+    }
+
+
+    private func selectionDrag(from anchor: UUID) -> some Gesture {
+        LongPressGesture(minimumDuration: 0.35, maximumDistance: 12)
+            .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .named(selectionSpace)))
+            .updating($sweepActive) { value, active, _ in
+                if case .second(true, _) = value { active = true }
+            }
+            .onChanged { value in
+                guard selecting, deletion == nil, case .second(true, let drag) = value else { return }
+                let ids = visible.map(\.id)
+                if sweep == nil { sweep = DeletedSelectionSweep(anchor: anchor, orderedIDs: ids, selectedIDs: selected) }
+                let available = Set(ids)
+                let target = drag.flatMap { drag -> UUID? in
+                    guard drag.location.y.isFinite else { return nil }
+                    return rowFrames.filter { available.contains($0.key) && $0.value.midY.isFinite }
+                        .min { abs($0.value.midY - drag.location.y) < abs($1.value.midY - drag.location.y) }?.key
+                } ?? anchor
+                if let next = sweep?.selection(through: target), next != selected { selected = next }
+            }
+            .onEnded { _ in sweep = nil }
     }
 
     private func label(_ item: RecentlyDeletedRecord) -> some View {
@@ -133,5 +180,12 @@ struct RecentlyDeletedView: View {
     private func prune() {
         do { try RecentlyDeletedStore().prune(in: context) }
         catch { self.error = error.localizedDescription }
+    }
+}
+
+private struct DeletedSelectionFrames: PreferenceKey {
+    static let defaultValue: [UUID: CGRect] = [:]
+    static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
+        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
     }
 }

@@ -42,7 +42,7 @@ nonisolated public enum HabitThemeDefaults {
         in defaults: UserDefaults = sharedDefaults,
         supporterDefaults: UserDefaults = SupporterDefaults.sharedDefaults
     ) -> HabitTheme {
-        HabitTheme.effective(preferred: theme(in: defaults), in: supporterDefaults)
+        HabitTheme.effective(preferred: theme(in: defaults), in: supporterDefaults).current
     }
 
     public static func setTheme(_ theme: HabitTheme, in defaults: UserDefaults = sharedDefaults) {

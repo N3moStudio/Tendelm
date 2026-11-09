@@ -19,7 +19,6 @@ struct AppearanceView: View {
             }
             .listRowBackground(Color.kadoBackgroundSecondary)
             HabitThemeSection()
-            SettingsSurfaceSection()
         }
         .tendelmSettingsPage()
         .tendelmSettingsAppearance()

@@ -64,7 +64,7 @@ struct HabitThemeDefaultsTests {
         #expect(HabitThemeDefaults.theme(in: suite) == .autumn)
 
         HabitThemeDefaults.setTheme(.classic, in: suite)
-        #expect(HabitThemeDefaults.renderedTheme(in: suite, supporterDefaults: supporter) == .classic)
+        #expect(HabitThemeDefaults.renderedTheme(in: suite, supporterDefaults: supporter) == .kado)
     }
 
     /// `@AppStorage` in `TendelmApp` and the widgets' `theme()` read the

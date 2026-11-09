@@ -28,7 +28,7 @@ final class HabitThemePickerTests: TendelmUITestCase {
     }
 
     @MainActor
-    func testChoosingClassicRecoloursTheAppWithoutARelaunch() {
+    func testChoosingMutedRecoloursTheAppWithoutARelaunch() {
         let app = launchApp(seedProduction: true, seedForScreenshots: true)
         waitForTodayRows(in: app)
         let before = badgePixels(in: app)
@@ -36,25 +36,25 @@ final class HabitThemePickerTests: TendelmUITestCase {
 
         openAppearance(in: app)
         let kado = themeRow("kado", in: app)
-        let classic = themeRow("classic", in: app)
-        scrollTo(classic, in: app)
-        scrollClearOfTabBar(classic, in: app)
+        let muted = themeRow("muted", in: app)
+        scrollTo(muted, in: app)
+        scrollClearOfTabBar(muted, in: app)
         XCTAssertTrue(kado.exists, "Settings should offer the Tendelm theme.")
         capture(app, "habit-theme-picker-kado")
 
         XCTAssertTrue(kado.isSelected, "Tendelm should be the theme a fresh install starts on.")
-        classic.tap()
-        let classicSelected = expectation(for: NSPredicate(format: "isSelected == true"), evaluatedWith: classic)
-        wait(for: [classicSelected], timeout: 5)
-        XCTAssertFalse(kado.isSelected, "Choosing Classic should deselect Tendelm.")
-        capture(app, "habit-theme-picker-classic")
+        muted.tap()
+        let mutedSelected = expectation(for: NSPredicate(format: "isSelected == true"), evaluatedWith: muted)
+        wait(for: [mutedSelected], timeout: 5)
+        XCTAssertFalse(kado.isSelected, "Choosing Muted should deselect Tendelm.")
+        capture(app, "habit-theme-picker-muted")
 
         tapTab(.overview, in: app)
-        capture(app, "habit-theme-overview-classic")
+        capture(app, "habit-theme-overview-muted")
 
         tapTab(.today, in: app)
         waitForTodayRows(in: app)
-        capture(app, "habit-theme-today-classic")
+        capture(app, "habit-theme-today-muted")
         XCTAssertNotEqual(before, badgePixels(in: app), "The habit's painted badge must change, not only the Settings checkmark.")
     }
 
@@ -90,7 +90,7 @@ final class HabitThemePickerTests: TendelmUITestCase {
         openAppearance(in: app)
         XCTAssertTrue(app.segmentedControls["appearance.display"].buttons["Dark"].isSelected)
         XCTAssertTrue(themeRow("autumn", in: app).isSelected)
-        XCTAssertEqual(dark, pagePixel(in: app))
+        XCTAssertNotEqual(dark, pagePixel(in: app), "Autumn changes the page color as well as the habit swatches.")
         app.segmentedControls["appearance.display"].buttons["Light"].tap()
         capture(app, "appearance-light-autumn")
         app.segmentedControls["appearance.display"].buttons["System"].tap()
@@ -115,14 +115,23 @@ final class HabitThemePickerTests: TendelmUITestCase {
     func testEveryPaletteIsSelectableInPersonalEdition() {
         let app = launchApp()
         openAppearance(in: app)
-        for theme in ["classic", "muted", "vivid", "autumn", "monochromeSage", "kado"] {
+        var paintedPages = Set<Data>()
+        for theme in ["muted", "autumn", "monochromeSage", "kado"] {
             let row = themeRow(theme, in: app)
             scrollTo(row, in: app)
             scrollClearOfTabBar(row, in: app)
             row.tap()
             let selected = expectation(for: NSPredicate(format: "isSelected == true"), evaluatedWith: row)
             wait(for: [selected], timeout: 5)
+            let pixels = pagePixel(in: app)
+            XCTAssertNotNil(pixels)
+            if let pixels { paintedPages.insert(pixels) }
+            capture(app, "palette-page-\(theme)")
         }
+        XCTAssertEqual(paintedPages.count, 4, "Every palette must visibly recolor the page.")
+        XCTAssertFalse(themeRow("classic", in: app).exists)
+        XCTAssertFalse(themeRow("vivid", in: app).exists)
+        XCTAssertFalse(app.buttons["appearance.surface.solid"].exists)
         capture(app, "habit-theme-all-palettes-available")
     }
 }
@@ -134,7 +143,7 @@ final class HabitThemePickerTests: TendelmUITestCase {
 /// `make e2e` skips it, as it does `ScreenshotTests`.
 final class HabitPaletteCaptureTests: TendelmUITestCase {
 
-    private let paidThemes = ["muted", "vivid", "autumn", "monochromeSage"]
+    private let paidThemes = ["muted", "autumn", "monochromeSage"]
 
     @MainActor
     func testCaptureEveryPaidPalette() {

@@ -2,27 +2,35 @@ import SwiftUI
 import UIKit
 
 public extension Color {
+    internal init(role: AppPalette.Role, light: UIColor, dark: UIColor) {
+        self = Color(UIColor { trait in
+            let isDark = trait.userInterfaceStyle == .dark
+            return AppPalette.color(role, theme: trait[HabitThemeTrait.self], dark: isDark)
+                ?? (isDark ? dark : light)
+        })
+    }
+
 
     // MARK: - Paper (surfaces)
-    static let kadoPaper50  = Color(light: rgb(0.984, 0.973, 0.949), dark: rgb(0.078, 0.075, 0.059))
-    static let kadoPaper100 = Color(light: rgb(0.957, 0.937, 0.902), dark: rgb(0.110, 0.102, 0.086))
-    static let kadoPaper200 = Color(light: rgb(0.914, 0.882, 0.824), dark: rgb(0.153, 0.141, 0.125))
-    static let kadoPaper300 = Color(light: rgb(0.851, 0.808, 0.722), dark: rgb(0.227, 0.204, 0.173))
+    static let kadoPaper50  = Color(role: .paper50, light: rgb(0.984, 0.973, 0.949), dark: rgb(0.078, 0.075, 0.059))
+    static let kadoPaper100 = Color(role: .paper100, light: rgb(0.957, 0.937, 0.902), dark: rgb(0.110, 0.102, 0.086))
+    static let kadoPaper200 = Color(role: .paper200, light: rgb(0.914, 0.882, 0.824), dark: rgb(0.153, 0.141, 0.125))
+    static let kadoPaper300 = Color(role: .paper300, light: rgb(0.851, 0.808, 0.722), dark: rgb(0.227, 0.204, 0.173))
 
     // MARK: - Ink (text)
-    static let kadoInk900 = Color(light: rgb(0.106, 0.102, 0.090), dark: rgb(0.957, 0.937, 0.902))
-    static let kadoInk700 = Color(light: rgb(0.216, 0.204, 0.180), dark: rgb(0.867, 0.835, 0.773))
-    static let kadoInk500 = Color(light: rgb(0.376, 0.357, 0.318), dark: rgb(0.663, 0.627, 0.576))
-    static let kadoInk300 = Color(light: rgb(0.576, 0.537, 0.482), dark: rgb(0.467, 0.431, 0.376))
-    static let kadoInk100 = Color(light: rgb(0.749, 0.710, 0.643), dark: rgb(0.306, 0.275, 0.224))
+    static let kadoInk900 = Color(role: .ink900, light: rgb(0.106, 0.102, 0.090), dark: rgb(0.957, 0.937, 0.902))
+    static let kadoInk700 = Color(role: .ink700, light: rgb(0.216, 0.204, 0.180), dark: rgb(0.867, 0.835, 0.773))
+    static let kadoInk500 = Color(role: .ink500, light: rgb(0.376, 0.357, 0.318), dark: rgb(0.663, 0.627, 0.576))
+    static let kadoInk300 = Color(role: .ink300, light: rgb(0.576, 0.537, 0.482), dark: rgb(0.467, 0.431, 0.376))
+    static let kadoInk100 = Color(role: .ink100, light: rgb(0.749, 0.710, 0.643), dark: rgb(0.306, 0.275, 0.224))
 
     // MARK: - Sage (brand accent)
-    static let kadoSage100 = Color(light: rgb(0.878, 0.914, 0.886), dark: rgb(0.122, 0.165, 0.137))
-    static let kadoSage300 = Color(light: rgb(0.647, 0.741, 0.682), dark: rgb(0.208, 0.349, 0.267))
-    static let kadoSage500 = Color(light: rgb(0.341, 0.478, 0.400), dark: rgb(0.431, 0.584, 0.506))
+    static let kadoSage100 = Color(role: .sage100, light: rgb(0.878, 0.914, 0.886), dark: rgb(0.122, 0.165, 0.137))
+    static let kadoSage300 = Color(role: .sage300, light: rgb(0.647, 0.741, 0.682), dark: rgb(0.208, 0.349, 0.267))
+    static let kadoSage500 = Color(role: .sage500, light: rgb(0.341, 0.478, 0.400), dark: rgb(0.431, 0.584, 0.506))
     /// Primary brand accent. Replaces the system blue tint.
-    static let kadoSage    = Color(light: rgb(0.208, 0.349, 0.267), dark: rgb(0.620, 0.745, 0.663))
-    static let kadoSage900 = Color(light: rgb(0.122, 0.227, 0.173), dark: rgb(0.769, 0.851, 0.796))
+    static let kadoSage    = Color(role: .sage, light: rgb(0.208, 0.349, 0.267), dark: rgb(0.620, 0.745, 0.663))
+    static let kadoSage900 = Color(role: .sage900, light: rgb(0.122, 0.227, 0.173), dark: rgb(0.769, 0.851, 0.796))
 
     // MARK: - Semantic aliases
     static let kadoBackground          = kadoPaper50

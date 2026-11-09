@@ -1,5 +1,24 @@
 # Tendelm settings adoption map
 
+## November 8 follow-up (before implementation)
+
+The user supersedes the original six-choice/surface contract below. Keep Tendelm,
+Muted, Autumn and Sage; remove Classic and Vivid from the picker. Their raw values
+remain decodable and render as Tendelm without rewriting preferences on read.
+Keep `kado.habitTheme`, individual habit slots, widget sharing and independent
+`personal.appearance`. Palettes now also drive existing semantic page, row and
+accent colors through the existing environment, without recreating navigation.
+Autumn becomes terracotta/amber/olive; Muted gains dusty mauve/grey surfaces.
+
+Remove Surface controls and identity-card surface text. Ignore, but do not rewrite,
+the old `personal.settingsSurface` value. Leave the native transparent navigation,
+tab bars and selection effects to iOS. No new material controls or animations.
+
+Recently Deleted keeps the same store, expiry, inline Restore/Delete actions,
+captured-ID permanent-delete confirmation, errors and bulk actions. Add trailing
+swipe Restore/Delete, and hold-and-drag range selection in Select mode. Selection
+is transient; no gesture itself permanently deletes or restores records.
+
 Recorded before presentation edits. Baseline b55a940; personal branch; working tree clean. SwiftUI iOS 18+, Xcode project with synchronized app/test folders. No AGENTS.md existed in this repository or its GitHub ancestors when checked; the supplied workspace instructions apply. Native Settings Kit 0.1.0 is retained under UI/NativeSettingsKit with notices and validation limits.
 
 Integration: adapt the kit's typography, identity card, rows, tiles and surface policy into the existing Tendelm design system. The reference package is not linked, and its example models are not used. Keep paper/ink/sage branding, the six existing habit palettes, and independent System/Light/Dark. No Bloom migration or new app-wide theme layer. No feature is removed or relocated out of its existing category.

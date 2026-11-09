@@ -46,6 +46,7 @@ run settings test-without-building -project Tendelm.xcodeproj -scheme Tendelm -d
   -only-testing:TendelmUITests/DevModeSwapTests \
   -only-testing:TendelmUITests/RecentlyDeletedUITests/testGroupedSettingsAtLargeText \
   -only-testing:TendelmUITests/RecentlyDeletedUITests/testTodayDeleteAndRestoreSurviveRelaunch \
+  -only-testing:TendelmUITests/RecentlyDeletedUITests/testCardsAndOverviewDeleteSelection \
   -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 360 \
   -maximum-test-execution-time-allowance 420 CODE_SIGNING_ALLOWED=NO
 xcrun simctl ui "$phone" appearance dark
