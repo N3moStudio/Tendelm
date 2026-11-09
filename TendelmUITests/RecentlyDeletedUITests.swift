@@ -54,7 +54,8 @@ final class RecentlyDeletedUITests: TendelmUITestCase {
         let last = rows.element(boundBy: 2)
         first.press(forDuration: 0.7, thenDragTo: last)
         capture(app, "recently-deleted-drag-selection")
-        XCTAssertEqual(app.buttons["trash.deleteSelected"].label, "Delete (3)")
+        XCTAssertEqual(app.buttons["trash.deleteSelected"].label, "Delete (3)",
+                       String(describing: app.buttons["trash.select"].value))
         last.press(forDuration: 0.7, thenDragTo: first)
         XCTAssertEqual(app.buttons["trash.deleteSelected"].label, "Delete All")
         first.tap()

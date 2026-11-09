@@ -14,6 +14,9 @@ struct RecentlyDeletedView: View {
     @State private var rowFrames: [UUID: CGRect] = [:]
     @State private var sweep: DeletedSelectionSweep?
     private let selectionSpace = "trash.selection"
+    #if DEBUG
+    @State private var selectionDiagnostic = "No hold received"
+    #endif
 
     private struct Deletion: Identifiable {
         let id = UUID()
@@ -43,12 +46,10 @@ struct RecentlyDeletedView: View {
                         .gesture(SelectionHoldGesture(space: selectionSpace) { state, location in
                             updateSelection(from: item.id, state: state, location: location)
                         })
-                        .background {
-                            GeometryReader { geometry in
-                                Color.clear.preference(key: DeletedSelectionFrames.self,
-                                    value: [item.id: geometry.frame(in: .named(selectionSpace))])
-                            }
-                        }
+                        .onGeometryChange(for: CGRect.self) { geometry in
+                            geometry.frame(in: .named(selectionSpace))
+                        } action: { frame in rowFrames[item.id] = frame }
+                        .onDisappear { rowFrames.removeValue(forKey: item.id) }
                         .accessibilityHint("Hold, then drag to select several items.")
                         .accessibilityValue(selected.contains(item.id) ? "Selected" : "Not selected")
                         .accessibilityAddTraits(selected.contains(item.id) ? .isSelected : [])
@@ -90,7 +91,6 @@ struct RecentlyDeletedView: View {
             } message: { plan in Text("\(plan.names). This cannot be undone. Items outside Recently Deleted stay as they are.") }
         }
         .coordinateSpace(name: selectionSpace)
-        .onPreferenceChange(DeletedSelectionFrames.self) { rowFrames = $0 }
         .onDisappear { sweep = nil; rowFrames = [:] }
         .tendelmSettingsPage()
         .navigationTitle("Recently Deleted")
@@ -100,6 +100,10 @@ struct RecentlyDeletedView: View {
                 Button(selecting ? "Done" : "Select") { sweep = nil; selecting.toggle(); selected.removeAll(); rowFrames = [:] }
                     .disabled(!selecting && visible.isEmpty)
                     .accessibilityIdentifier("trash.select")
+                    #if DEBUG
+                    .accessibilityValue(UITestSupport.isRunningUITests
+                        ? "\(rowFrames.count) measured rows; \(selectionDiagnostic)" : "")
+                    #endif
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -136,6 +140,9 @@ struct RecentlyDeletedView: View {
 
 
     private func updateSelection(from anchor: UUID, state: UIGestureRecognizer.State, location: CGPoint) {
+        #if DEBUG
+        selectionDiagnostic = "state \(state.rawValue), y \(Int(location.y.isFinite ? location.y : 0)), selected \(selected.count)"
+        #endif
         guard selecting, deletion == nil, location.y.isFinite else { sweep = nil; return }
         switch state {
         case .began, .changed, .ended:
@@ -179,9 +186,3 @@ struct RecentlyDeletedView: View {
     }
 }
 
-private struct DeletedSelectionFrames: PreferenceKey {
-    static let defaultValue: [UUID: CGRect] = [:]
-    static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
-        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
-    }
-}
