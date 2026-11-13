@@ -5,17 +5,17 @@ permissions:
   contents: read
 concurrency:
   group: tendelm-personal
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   build:
     runs-on: macos-26
-    timeout-minutes: 90
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - name: Select validated Xcode generation
         run: sudo xcode-select -s /Applications/Xcode_26.6.app/Contents/Developer
-      - name: Test and package unsigned IPA
-        run: bash Scripts/build-personal.sh
+      - name: Build and verify unsigned IPA
+        run: bash Scripts/package-personal.sh
       - name: Save IPA
         uses: actions/upload-artifact@v4
         with:
@@ -34,3 +34,21 @@ jobs:
             .build-personal-*/*.json
             .build-personal-*/attachments/**/*
           retention-days: 14
+
+  validation:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo xcode-select -s /Applications/Xcode_26.6.app/Contents/Developer
+      - name: Simulator regression checks
+        run: bash Scripts/check-settings.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Tendelm-simulator-evidence
+          include-hidden-files: true
+          path: |
+            .settings-check-*/*.log
+            .settings-check-*/*.json
+            .settings-check-*/attachments/**/*
