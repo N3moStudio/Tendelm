@@ -36,3 +36,7 @@ Tendelm means tending something steadily, with elm as its botanical anchor. The 
 Kadō © 2026 Sébastien Castiel, MIT. ThinkingOrbsKit © 2026 Jakub Antalik, MIT, pinned to `54722cc9a3dcb167037f7d449d6cca4d174e9eb5`. Full notices are in `LICENSE` and `Tendelm/Resources/OpenSourceNotices.txt`, also accessible in Settings → About Tendelm → Credits.
 
 The inherited English/French translations are retained; new personal-edition strings currently use English fallback. Historical product and design documents under `docs/` describe upstream Kadō unless identified as Tendelm work. They are not claims about this build.
+
+## Licensing
+
+Original Tendelm contributions are all rights reserved; copying, resale and reuse require permission. See [LICENSE](LICENSE). Kadō-derived code retains its [MIT license](LICENSES/Kado-MIT.txt), and existing third-party and previously granted rights remain intact. Public visibility permits viewing and GitHub forking, not unrestricted reuse of reserved contributions.

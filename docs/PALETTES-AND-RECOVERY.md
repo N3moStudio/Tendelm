@@ -42,6 +42,5 @@ to the removed Surface type was found; `c4b5c3a` fixed that reference.
 
 Run `6af1668024e1ec237557cb02` passed 844 unit tests plus the known expected issue. Its UI phase passed 12 checks and found four failures: the bridged theme key fell back to UIKit defaults, so palette renders stayed unchanged; the SwiftUI sequenced hold/drag stopped at its anchor. Swipe restore/delete and its cancellation passed. The fix restores the original SwiftUI habit environment, installs the color trait on the owning window, and uses a continuous native long-press recognizer. A separate fixture-based gesture check now runs early, alongside palette pixel checks. Empty calendar cells also get a dedicated semantic fill so tinted cards cannot make unscheduled days outweigh scored cells.
 
-Final native validation is in progress. Results and inspected screenshots will be
-recorded here. Simulator checks cannot establish physical-device gesture timing,
+Codemagic run `6af1726524e1ec237557cded` completed successfully for `806f049` on November 9, 2026. Its validation script and all build actions reported success. Detailed attachments remain in Codemagic; this status is not a physical-device acceptance result. Simulator checks cannot establish physical-device gesture timing,
 VoiceOver experience, sideload installation or battery/performance acceptance.

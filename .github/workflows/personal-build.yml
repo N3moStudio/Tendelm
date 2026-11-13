@@ -1,84 +1,36 @@
 name: Tendelm IPA
 on:
   workflow_dispatch:
-  push:
-    branches: [personal]
 permissions:
   contents: read
 concurrency:
   group: tendelm-personal
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   build:
-    runs-on: macos-15
-    timeout-minutes: 60
+    runs-on: macos-26
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-      - name: Select Xcode
-        run: |
-          ls -d /Applications/Xcode*.app
-          DEVELOPER_APP=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
-          sudo xcode-select -s "$DEVELOPER_APP/Contents/Developer"
-          xcodebuild -version
-          xcrun simctl list devices available
-      - name: Unit tests
-        run: |
-          mkdir -p output
-          DEVICE_ID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(v["udid"] for a in d["devices"].values() for v in a if "iPhone" in v["name"]))')
-          echo "$DEVICE_ID" > output/simulator-id.txt
-          set -o pipefail
-          pgrep -lx xcodebuild || true
-          xcodebuild test -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=iOS Simulator,id=$DEVICE_ID" -derivedDataPath build -resultBundlePath output/UnitTests.xcresult -only-testing:TendelmTests CODE_SIGNING_ALLOWED=NO > output/unit-tests.log 2>&1 || { tail -100 output/unit-tests.log; exit 1; }
-          tail -30 output/unit-tests.log
-      - name: iPhone interactions and screenshots
-        run: |
-          DEVICE_ID=$(cat output/simulator-id.txt)
-          xcrun simctl boot "$DEVICE_ID" || true
-          xcrun simctl bootstatus "$DEVICE_ID" -b
-          xcrun simctl ui "$DEVICE_ID" appearance light
-          pgrep -lx xcodebuild || true
-          xcodebuild test-without-building -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=iOS Simulator,id=$DEVICE_ID" -derivedDataPath build -resultBundlePath output/iPhone-Light.xcresult -only-testing:TendelmUITests/PersonalEditionTests -only-testing:TendelmUITests/HabitThemePickerTests -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 90 -maximum-test-execution-time-allowance 180 CODE_SIGNING_ALLOWED=NO > output/iphone-ui.log 2>&1 || { tail -90 output/iphone-ui.log; exit 1; }
-          tail -15 output/iphone-ui.log
-      - name: Dark appearance screenshots
-        run: |
-          DEVICE_ID=$(cat output/simulator-id.txt)
-          xcrun simctl ui "$DEVICE_ID" appearance dark
-          pgrep -lx xcodebuild || true
-          xcodebuild test-without-building -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=iOS Simulator,id=$DEVICE_ID" -derivedDataPath build -resultBundlePath output/iPhone-Dark.xcresult -only-testing:TendelmUITests/PersonalEditionTests/testCapturePersonalScreens -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO > output/dark-ui.log 2>&1 || { tail -90 output/dark-ui.log; exit 1; }
-      - name: iPad screenshots
-        run: |
-          DEVICE_ID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(v["udid"] for a in d["devices"].values() for v in a if "iPad" in v["name"]))')
-          xcrun simctl boot "$DEVICE_ID" || true
-          xcrun simctl bootstatus "$DEVICE_ID" -b
-          pgrep -lx xcodebuild || true
-          xcodebuild test-without-building -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=iOS Simulator,id=$DEVICE_ID" -derivedDataPath build -resultBundlePath output/iPad.xcresult -only-testing:TendelmUITests/PersonalEditionTests/testCapturePersonalScreens -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO > output/ipad-ui.log 2>&1 || { tail -90 output/ipad-ui.log; exit 1; }
-      - name: Device build and IPA
-        run: |
-          set -o pipefail
-          pgrep -lx xcodebuild || true
-          xcodebuild build -project Tendelm.xcodeproj -scheme Tendelm -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath device-build CODE_SIGNING_ALLOWED=NO > output/device-build.log 2>&1 || { tail -100 output/device-build.log; exit 1; }
-          mkdir -p output/Payload
-          cp -R device-build/Build/Products/Release-iphoneos/Tendelm.app output/Payload/
-          cd output
-          zip -qr Tendelm-1.0.2.ipa Payload
-          shasum -a 256 Tendelm-1.0.2.ipa > Tendelm-1.0.2.ipa.sha256
-          rm -rf Payload
-      - name: Inspect device package
-        run: python3 Scripts/verify-personal-ipa.py output/Tendelm-1.0.2.ipa > output/package-inspection.json
-      - name: Verify reset regression test
-        run: bash Scripts/check-reset-guard.sh
-      - name: Export evidence
-        if: always()
-        run: |
-          for result in output/*.xcresult; do
-            [ -d "$result" ] || continue
-            name=$(basename "$result" .xcresult)
-            xcrun xcresulttool get test-results summary --path "$result" --format json > "output/$name-summary.json" || true
-            xcrun xcresulttool export attachments --path "$result" --output-path "output/$name-attachments" || true
-          done
-      - uses: actions/upload-artifact@v4
-        if: always()
+      - name: Select validated Xcode generation
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app/Contents/Developer
+      - name: Test and package unsigned IPA
+        run: bash Scripts/build-personal.sh
+      - name: Save IPA
+        uses: actions/upload-artifact@v4
         with:
-          name: Tendelm
-          path: output/
+          name: Tendelm-IPA
+          path: .build-personal-*/*.ipa
+          include-hidden-files: true
+          if-no-files-found: error
+      - name: Save build evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tendelm-build-evidence
+          include-hidden-files: true
+          path: |
+            .build-personal-*/*.log
+            .build-personal-*/*.json
+            .build-personal-*/attachments/**/*
           retention-days: 14
