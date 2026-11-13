@@ -17,6 +17,10 @@ final class HabitThemePickerTests: TendelmUITestCase {
             .firstMatch
     }
 
+    private func appThemeRow(_ rawValue: String, in app: XCUIApplication) -> XCUIElement {
+        app.buttons["settings.appPalette.\(rawValue)"]
+    }
+
     /// Settings → Appearance, where the picker lives.
     @MainActor
     private func openAppearance(in app: XCUIApplication) {
@@ -25,6 +29,9 @@ final class HabitThemePickerTests: TendelmUITestCase {
         scrollTo(row, in: app)
         capture(app, "settings-appearance-row")
         row.tap()
+        XCTAssertFalse(app.buttons["appearance.surface.solid"].exists)
+        XCTAssertFalse(app.buttons["appearance.surface.liquidGlass"].exists)
+        XCTAssertFalse(app.staticTexts["Liquid Glass"].exists)
     }
 
     @MainActor
@@ -80,7 +87,7 @@ final class HabitThemePickerTests: TendelmUITestCase {
         display.buttons["Dark"].tap()
         let dark = pagePixel(in: app)
         XCTAssertNotEqual(light, dark, "The page itself must change when Display changes.")
-        let autumn = themeRow("autumn", in: app)
+        let autumn = appThemeRow("autumn", in: app)
         scrollTo(autumn, in: app)
         autumn.tap()
         XCTAssertTrue(autumn.isSelected)
@@ -89,7 +96,7 @@ final class HabitThemePickerTests: TendelmUITestCase {
         app = launchApp(resetState: false)
         openAppearance(in: app)
         XCTAssertTrue(app.segmentedControls["appearance.display"].buttons["Dark"].isSelected)
-        XCTAssertTrue(themeRow("autumn", in: app).isSelected)
+        XCTAssertTrue(appThemeRow("autumn", in: app).isSelected)
         XCTAssertNotEqual(dark, pagePixel(in: app), "Autumn changes the page color as well as the habit swatches.")
         app.segmentedControls["appearance.display"].buttons["Light"].tap()
         capture(app, "appearance-light-autumn")
@@ -117,7 +124,7 @@ final class HabitThemePickerTests: TendelmUITestCase {
         openAppearance(in: app)
         var paintedPages = Set<Data>()
         for theme in ["muted", "autumn", "monochromeSage", "kado"] {
-            let row = themeRow(theme, in: app)
+            let row = appThemeRow(theme, in: app)
             scrollTo(row, in: app)
             scrollClearOfTabBar(row, in: app)
             row.tap()
