@@ -39,6 +39,10 @@ public struct TendelmThemeModifier: ViewModifier {
             guard !didRun else { return }
             didRun = true
 
+            // iOS 26 owns Liquid Glass navigation and tab surfaces. Do not
+            // replace them with legacy appearance objects or solid backgrounds.
+            if #available(iOS 26.0, *) { return }
+
             // Keep the system's default nav bar material so the large
             // title stays visible and the bar blends naturally with the
             // paper content behind it. Only override typography: ink

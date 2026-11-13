@@ -13,12 +13,12 @@ private struct TimeSinceUndoToast: ViewModifier {
                 if let action {
                     Button(action: undo) {
                         Label("Undo", systemImage: "arrow.uturn.backward")
-                            .foregroundStyle(Color.kadoBackground)
+                            .foregroundStyle(Color.kadoForeground)
                             .font(.subheadline.weight(.semibold))
                             .padding(.horizontal, 6)
                             .frame(minHeight: 32)
                     }
-                    .buttonStyle(.borderedProminent)
+                    .modifier(UndoGlassStyle())
                     .buttonBorderShape(.capsule)
                     .tint(Color.kadoAccent)
                     .accessibilityLabel(undoLabel(action))
@@ -54,5 +54,17 @@ private struct TimeSinceUndoToast: ViewModifier {
 extension View {
     func timeSinceUndo(_ action: Binding<TimeSinceUndoAction?>, perform undo: @escaping () -> Void) -> some View {
         modifier(TimeSinceUndoToast(action: action, undo: undo))
+    }
+}
+
+private struct UndoGlassStyle: ViewModifier {
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content.buttonStyle(.glass)
+        } else {
+            content.buttonStyle(.bordered)
+                .background(.regularMaterial, in: Capsule())
+        }
     }
 }

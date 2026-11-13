@@ -55,3 +55,7 @@ Validation plan: portable kit checks, Swift syntax, native simulator-only compil
 ## November 12: independent app and habit colors
 
 Before edits: Display remains personal.appearance. Habit colors retain kado.habitTheme. Add personal.appPalette for an independent overall palette above Habit colors; absent value inherits the existing palette without rewriting it. Surface remains absent. Existing storage, backup format, navigation and native materials remain unchanged.
+
+## November 12: always-on native glass
+
+No Solid or Liquid Glass picker. Ignore legacy surface preferences. On iOS 26+, leave navigation and tabs entirely under system Liquid Glass styling, without legacy UIKit appearance overrides; the floating Undo control uses the native glass button style. Older systems retain native material fallback. System accessibility preferences remain respected. Theme colors, content readability and all actions remain intact.
