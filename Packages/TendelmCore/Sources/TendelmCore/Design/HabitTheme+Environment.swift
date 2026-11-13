@@ -22,6 +22,8 @@ private struct HabitThemeKey: UITraitBridgedEnvironmentKey {
 
 public extension EnvironmentValues {
     /// SwiftUI state remains independent of UIKit's inherited trait defaults.
+    @Entry var appTheme: HabitTheme? = nil
+
     @Entry var habitTheme: HabitTheme = HabitThemeDefaults.defaultValue
 
     /// UIKit's window trait is also visible during SwiftUI color resolution.

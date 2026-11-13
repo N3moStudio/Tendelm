@@ -18,6 +18,7 @@ struct AppearanceView: View {
                 .accessibilityIdentifier("appearance.display")
             }
             .listRowBackground(Color.kadoBackgroundSecondary)
+            HabitThemeSection(isAppPalette: true)
             HabitThemeSection()
         }
         .tendelmSettingsPage()

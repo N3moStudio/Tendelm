@@ -13,6 +13,7 @@ struct TendelmApp: App {
     private var weekStart: WeekStart = WeekStartDefaults.defaultValue
     @AppStorage(HabitThemeDefaults.key, store: HabitThemeDefaults.sharedDefaults)
     private var habitTheme: HabitTheme = HabitThemeDefaults.defaultValue
+    @AppStorage("personal.appPalette") private var appPalette = ""
     @AppStorage("personal.appearance") private var appearance: AppAppearance = .system
     @AppStorage(AppIconDefaults.key) private var appIcon: AppIcon = AppIconDefaults.defaultValue
     @Environment(\.scenePhase) private var scenePhase
@@ -215,6 +216,7 @@ struct TendelmApp: App {
         .environment(\.today, boundary.startOfDay(for: clockMark))
         .environment(\.dayBoundary, boundary)
         .environment(\.habitTheme, renderedHabitTheme)
+        .environment(\.appTheme, HabitTheme(rawValue: appPalette)?.current)
         .onChange(of: scenePhase) { _, newPhase in
             // Reconciles the pending set every time the app comes
             // to the foreground — handles clock-drift, day-rollover,

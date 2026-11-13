@@ -8,6 +8,7 @@ import UIKit
 public struct TendelmThemeModifier: ViewModifier {
 
     @Environment(\.habitTheme) private var theme
+    @Environment(\.appTheme) private var appTheme
     @Environment(\.appPaletteTrait) private var paletteTrait
 
     public init() {}
@@ -15,8 +16,8 @@ public struct TendelmThemeModifier: ViewModifier {
     public func body(content: Content) -> some View {
         let _ = paletteTrait // Observe the native color-trait change without replacing views.
         content
-            .tint(Color.kadoSage.inPalette(theme))
-            .background(PaletteTraitInstaller(theme: theme))
+            .tint(Color.kadoSage.inPalette(appTheme ?? theme))
+            .background(PaletteTraitInstaller(theme: appTheme ?? theme))
             .background(Color.kadoBackground.ignoresSafeArea())
             .scrollContentBackground(.hidden)
             .onAppear(perform: Self.applyUIKitAppearance)
