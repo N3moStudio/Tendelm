@@ -49,6 +49,9 @@ run unit test -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=
   -derivedDataPath "$out/DerivedData" -resultBundlePath "$out/Unit.xcresult" -only-testing:TendelmTests CODE_SIGNING_ALLOWED=NO
 run interactions test-without-building -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=iOS Simulator,id=$phone" \
   -derivedDataPath "$out/DerivedData" -resultBundlePath "$out/Interactions.xcresult" \
+  -only-testing:TendelmUITests/PersonalEditionTests/testHistoryContextDeleteCanUndoExactReset \
+  -only-testing:TendelmUITests/PersonalEditionTests/testPreviousResetCancelSaveUndoAndRelaunch \
+  -only-testing:TendelmUITests/PersonalEditionTests/testSwipeDeleteHistoryUndoAndRelaunch \
   -only-testing:TendelmUITests/HabitThemePickerTests \
   -only-testing:TendelmUITests/RecentlyDeletedUITests/testHoldAndDragSelectsAndDeselectsMultipleRows \
   -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO
