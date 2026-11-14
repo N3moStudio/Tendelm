@@ -27,6 +27,7 @@ import TendelmCore
 /// mixes in Oklab rather than sRGB.
 struct HabitRowView: View {
     @Environment(\.habitTheme) private var habitTheme
+    @Environment(\.dynamicTypeSize) private var typeSize
     let habit: Habit
     let state: HabitRowState
     let streak: Int
@@ -51,18 +52,21 @@ struct HabitRowView: View {
     private var isComplete: Bool { state.status == .complete }
 
     var body: some View {
-        HStack(spacing: 12) {
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+            : AnyLayout(HStackLayout(spacing: 12))
+        layout {
             leadingBadge
                 .frame(width: 38, height: 38)
             VStack(alignment: .leading, spacing: 2) {
                 Text(habit.name)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(Color.kadoForeground)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+                    .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
+                    .fixedSize(horizontal: false, vertical: true)
                 metricsLine
             }
-            Spacer(minLength: 8)
+            if !typeSize.isAccessibilitySize { Spacer(minLength: 8) }
             trailingControl
         }
         .padding(.vertical, 4)
@@ -135,8 +139,8 @@ struct HabitRowView: View {
                 .font(.callout.weight(.semibold))
                 .foregroundStyle(isComplete ? habit.color.onFill(in: habitTheme) : habit.color.onTint(in: habitTheme))
         }
-        .animation(TendelmMotion.base, value: state.progress)
-        .animation(TendelmMotion.base, value: isComplete)
+        .animation(reduceMotion ? nil : TendelmMotion.base, value: state.progress)
+        .animation(reduceMotion ? nil : TendelmMotion.base, value: isComplete)
     }
 
     // MARK: - Metrics line
@@ -194,6 +198,8 @@ struct HabitRowView: View {
                     Capsule().fill(habit.color.tint(.timerPill, in: habitTheme))
                 )
                 .foregroundStyle(habit.color.onTint(in: habitTheme))
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.borderless)
         .accessibilityLabel(String(localized: "Add 5 minutes"))
@@ -250,6 +256,8 @@ struct HabitRowView: View {
             .frame(width: 28, height: 28)
             .background(Circle().fill(filled ? habit.color.color(in: habitTheme) : habit.color.tint(.counterPill, in: habitTheme)))
             .foregroundStyle(filled ? habit.color.onFill(in: habitTheme) : habit.color.onTint(in: habitTheme))
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
     }
 
     // MARK: - Counter stepper
@@ -289,6 +297,8 @@ struct HabitRowView: View {
                 .frame(width: 28, height: 28)
                 .background(Circle().fill(Color.kadoPaper200))
                 .foregroundStyle(canDecrement ? Color.kadoForeground : Color.kadoForegroundSecondary)
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.borderless)
         .disabled(!canDecrement)
@@ -302,6 +312,8 @@ struct HabitRowView: View {
                 .frame(width: 28, height: 28)
                 .background(Circle().fill(habit.color.tint(.counterPill, in: habitTheme)))
                 .foregroundStyle(habit.color.onTint(in: habitTheme))
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.borderless)
         .accessibilityLabel(String(localized: "Increment"))

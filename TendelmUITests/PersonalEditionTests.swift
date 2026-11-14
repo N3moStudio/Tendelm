@@ -2,6 +2,32 @@ import XCTest
 
 final class PersonalEditionTests: TendelmUITestCase {
     @MainActor
+    func testHistoryContextDeleteCanUndoExactReset() {
+        let app = launchApp(seedProduction: true, seedTimeSince: true)
+        tapTab(.timeSince, in: app)
+        let detail = buttons("timeSince.detail.", in: app).firstMatch
+        XCTAssertTrue(detail.waitForExistence(timeout: 5))
+        detail.tap()
+        let reset = app.buttons["timeSince.detail.reset"]
+        XCTAssertTrue(reset.waitForExistence(timeout: 5))
+        reset.tap()
+        let row = historyRows(in: app).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        let identifier = row.identifier
+        let before = historyRows(in: app).count
+        scrollTo(row, in: app)
+        row.press(forDuration: 1)
+        let deletion = buttons("timeSince.history.menuDelete.", in: app).firstMatch
+        XCTAssertTrue(deletion.waitForExistence(timeout: 5))
+        deletion.tap()
+        XCTAssertTrue(app.buttons["timeSince.undo"].waitForExistence(timeout: 5))
+        XCTAssertEqual(historyRows(in: app).count, before - 1)
+        app.buttons["timeSince.undo"].tap()
+        XCTAssertEqual(historyRows(in: app).count, before)
+        XCTAssertTrue(app.descendants(matching: .any)[identifier].firstMatch.exists)
+    }
+
+    @MainActor
     func testPreviousResetCancelSaveUndoAndRelaunch() {
         var app = launchApp(seedProduction: true, seedTimeSince: true)
         tapTab(.timeSince, in: app)

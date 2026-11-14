@@ -55,6 +55,11 @@ struct TimeSinceDetailView: View {
                             }
                             .accessibilityElement(children: .combine)
                             .accessibilityIdentifier("timeSince.history.\(event.id)")
+                            .accessibilityAction(named: Text("Delete reset")) { deleteReset(event.id) }
+                            .contextMenu {
+                                Button("Delete reset", systemImage: "trash", role: .destructive) { deleteReset(event.id) }
+                                    .accessibilityIdentifier("timeSince.history.menuDelete.\(event.id)")
+                            }
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button("Delete", systemImage: "trash", role: .destructive) { deleteReset(event.id) }
                                     .accessibilityIdentifier("timeSince.history.delete.\(event.id)")

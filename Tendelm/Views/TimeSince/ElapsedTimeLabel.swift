@@ -64,9 +64,13 @@ struct ElapsedTimeLabel: View {
 
     private func unit(_ value: Int, label: LocalizedStringKey) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
-            Text(value, format: .number)
-                .font(.title2.weight(.medium))
-                .foregroundStyle(Color.kadoForeground)
+            ZStack(alignment: .trailing) {
+                // Reserve two digit columns without changing spoken or visible values.
+                Text(88, format: .number).hidden().accessibilityHidden(true)
+                Text(value, format: .number)
+            }
+            .font(.title2.weight(.medium))
+            .foregroundStyle(Color.kadoForeground)
             Text(label)
                 .font(.caption)
                 .foregroundStyle(Color.kadoForegroundSecondary)
