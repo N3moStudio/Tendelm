@@ -33,6 +33,7 @@ public struct TimeSinceStore {
         record.name = tracker.name.trimmingCharacters(in: .whitespacesAndNewlines)
         record.startedAt = tracker.startedAt
         record.color = tracker.color
+        record.sortOrder = tracker.sortOrder
         for event in record.resets ?? [] where !incomingIDs.contains(event.id) {
             context.delete(event)
         }

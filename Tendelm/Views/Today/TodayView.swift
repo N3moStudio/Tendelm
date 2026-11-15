@@ -49,6 +49,7 @@ struct TodayView: View {
     @State private var sheet: TodaySheet?
     @State private var confirmingArchiveOf: UUID?
     @State private var deletionError: String?
+    @State private var reorderFeedback = 0
     /// The latest `−` / `+` / `+5m` tap, for the haptic. Recorded by
     /// the mutation rather than observed on the row: a row keyed on
     /// its own value ticks when the day rolls over or a sync lands,
@@ -104,7 +105,7 @@ struct TodayView: View {
             }
         }
         .onAppear(perform: refreshCard)
-        .alert("Couldn't delete habit", isPresented: Binding(get: { deletionError != nil }, set: { if !$0 { deletionError = nil } })) {
+        .alert("Couldn't update habit", isPresented: Binding(get: { deletionError != nil }, set: { if !$0 { deletionError = nil } })) {
             Button("OK", role: .cancel) {}
         } message: { Text(deletionError ?? "") }
         // Re-asked after every sheet, because two of them retire a
@@ -322,7 +323,7 @@ struct TodayView: View {
                         Text("Not scheduled today")
                             .foregroundStyle(Color.kadoForegroundSecondary)
                     } footer: {
-                        Text("Tap for details. Hold a habit to move it to Recently Deleted.")
+                        Text("Hold and drag the handle to reorder. Hold the habit for Delete.")
                             .foregroundStyle(Color.kadoForegroundSecondary)
                     }
                 }
@@ -352,6 +353,8 @@ struct TodayView: View {
             .scrollContentBackground(.hidden)
             .background(Color.kadoBackground.ignoresSafeArea())
             .quickLogFeedback(quickLog)
+            .sensoryFeedback(.selection, trigger: reorderFeedback)
+            .transaction { if reduceMotion { $0.animation = nil } }
             .refreshable {
                 try? await Task.sleep(for: .seconds(1))
             }
@@ -414,18 +417,26 @@ struct TodayView: View {
     }
 
     private func cardContent<V: View>(_ header: V, item: TodayRow) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            header
-            if todayLayout == "cards" {
-                HabitHistoryCardGrid(habit: item.habit, completions: item.completions)
+        let section = sections.due.contains(where: { $0.id == item.id }) ? sections.due : sections.other
+        let index = section.firstIndex(where: { $0.id == item.id }) ?? 0
+        return ZStack(alignment: .topTrailing) {
+            VStack(alignment: .leading, spacing: 14) {
+                header.padding(.trailing, 44)
+                if todayLayout == "cards" {
+                    HabitHistoryCardGrid(habit: item.habit, completions: item.completions)
+                }
             }
+            .contentShape(Rectangle())
+            .contextMenu {
+                Button("Delete", systemImage: "trash", role: .destructive) { moveToRecentlyDeleted(item.id) }
+                    .accessibilityIdentifier("habit.delete")
+            }
+            ReorderGrip(name: item.habit.name, identifier: "reorder.habit.\(item.id)",
+                moveUp: index > 0 ? { moveHabits(section, from: IndexSet(integer: index), to: index - 1) } : nil,
+                moveDown: index + 1 < section.count ? { moveHabits(section, from: IndexSet(integer: index), to: index + 2) } : nil)
         }
         .padding(.vertical, todayLayout == "cards" ? 8 : 0)
-        .contentShape(Rectangle())
-        .contextMenu {
-            Button("Delete", systemImage: "trash", role: .destructive) { moveToRecentlyDeleted(item.id) }
-                .accessibilityIdentifier("habit.delete")
-        }
+        .contentShape(.dragPreview, RoundedRectangle(cornerRadius: todayLayout == "cards" ? 18 : 10))
     }
 
     /// The two Today sections, snapshotted from the live records.
@@ -517,27 +528,11 @@ struct TodayView: View {
         var reordered = section
         reordered.move(fromOffsets: source, toOffset: destination)
 
-        let (due, other) = sections
-        let isDueSection = section.first.map { first in
-            due.contains { $0.id == first.id }
-        } == true
-
-        let finalOrder: [TodayRow]
-        if isDueSection {
-            finalOrder = reordered + other
-        } else {
-            finalOrder = due + reordered
-        }
-
-        let recordsByID = Dictionary(
-            activeHabits.map { ($0.id, $0) },
-            uniquingKeysWith: { first, _ in first }
-        )
-        for (index, item) in finalOrder.enumerated() {
-            recordsByID[item.id]?.sortOrder = index
-        }
-        try? modelContext.save()
-        WidgetReloader.reloadAll(using: modelContext)
+        do {
+            try ItemOrderStore().habits(reordered.map(\.id), in: modelContext)
+            reorderFeedback += 1
+            WidgetReloader.reloadAll(using: modelContext)
+        } catch { deletionError = error.localizedDescription }
     }
 
     private func toggle(_ habitID: UUID) {

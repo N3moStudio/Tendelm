@@ -108,7 +108,7 @@ final class DevModeController {
     }
 
     private func makeDevContainer() throws -> ModelContainer {
-        let schema = Schema(versionedSchema: TendelmSchemaV6.self)
+        let schema = Schema(versionedSchema: TendelmSchemaV7.self)
         let configuration = ModelConfiguration(
             schema: schema,
             url: devStoreURL,

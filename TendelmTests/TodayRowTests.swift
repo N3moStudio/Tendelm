@@ -14,7 +14,7 @@ import TendelmCore
 @MainActor
 struct TodayRowTests {
     private func makeContainer() throws -> ModelContainer {
-        let schema = Schema(versionedSchema: TendelmSchemaV5.self)
+        let schema = Schema(versionedSchema: TendelmSchemaV7.self)
         return try ModelContainer(
             for: schema,
             migrationPlan: TendelmMigrationPlan.self,

@@ -93,6 +93,14 @@ nonisolated public struct CSVBackupCoder: Sendable {
                 }
             }
         }
+        if document.timeSinceTrackers.contains(where: { $0.sortOrder != nil }) {
+            let orders = Dictionary(document.timeSinceTrackers.map { ($0.id.uuidString, $0.sortOrder) }, uniquingKeysWith: { first, _ in first })
+            rows = rows.enumerated().map { index, row in
+                if index == 0 { return row + ["tracker_order"] }
+                let value = row[4] == "time_since" ? (orders[row[1]] ?? nil) : nil
+                return row + [value.map(String.init) ?? ""]
+            }
+        }
         return Data(CSVWriter.write(rows).utf8)
     }
 
@@ -114,7 +122,7 @@ nonisolated public struct CSVBackupCoder: Sendable {
             throw BackupError.invalidCSV
         }
 
-        guard let header = rows.first, header == Self.columns else {
+        guard let header = rows.first, (header == Self.columns || header == Self.columns + ["tracker_order"]) else {
             throw BackupError.invalidCSV
         }
 
@@ -131,7 +139,7 @@ nonisolated public struct CSVBackupCoder: Sendable {
             // Assumes no blank lines, which the reader skips silently.
             let line = offset + 2
 
-            guard row.count == Self.columns.count else {
+            guard row.count == header.count else {
                 throw BackupError.malformedRow(line: line)
             }
 
@@ -148,7 +156,8 @@ nonisolated public struct CSVBackupCoder: Sendable {
                 guard version >= 2 else { throw BackupError.invalidCSV }
                 if trackers[habitID] == nil {
                     trackers[habitID] = TimeSinceTracker(id: habitID, name: row[2],
-                        startedAt: try Self.decodeDate(row[5]), color: try Self.decodeColor(row[7]))
+                        startedAt: try Self.decodeDate(row[5]), color: try Self.decodeColor(row[7]),
+                        sortOrder: row.count > 16 && !row[16].isEmpty ? try Self.decodeInt(row[16]) : nil)
                     trackerOrder.append(habitID)
                 }
                 if !row[12].isEmpty {

@@ -46,7 +46,7 @@ struct AppDataResetTests {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
-        let schema = Schema(versionedSchema: TendelmSchemaV6.self)
+        let schema = Schema(versionedSchema: TendelmSchemaV7.self)
         let production = try ModelContainer(for: schema, migrationPlan: TendelmMigrationPlan.self,
             configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none))
             .usingExplicitTestSaves()

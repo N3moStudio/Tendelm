@@ -7,7 +7,7 @@ import TendelmCore
 struct TimeSincePersistenceTests {
     private let start = Date(timeIntervalSince1970: 1_700_000_000)
     private func memoryStore() throws -> ModelContainer {
-        let schema = Schema(versionedSchema: TendelmSchemaV5.self)
+        let schema = Schema(versionedSchema: TendelmSchemaV7.self)
         return try ModelContainer(for: schema, migrationPlan: TendelmMigrationPlan.self,
             configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)).usingExplicitTestSaves()
     }
@@ -193,14 +193,14 @@ struct TimeSincePersistenceTests {
         }
         let tracker = TimeSinceTracker(name: "Scrolling", startedAt: start)
         do {
-            let schema = Schema(versionedSchema: TendelmSchemaV5.self)
+            let schema = Schema(versionedSchema: TendelmSchemaV7.self)
             let container = try ModelContainer(for: schema, migrationPlan: TendelmMigrationPlan.self,
                 configurations: ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none)).usingExplicitTestSaves()
             #expect(try container.mainContext.fetch(FetchDescriptor<HabitRecord>()).first?.name == "Read")
             #expect(try container.mainContext.fetchCount(FetchDescriptor<CompletionRecord>()) == 1)
             try TimeSinceStore().save(tracker, in: container.mainContext)
         }
-        let schema = Schema(versionedSchema: TendelmSchemaV5.self)
+        let schema = Schema(versionedSchema: TendelmSchemaV7.self)
         let reopened = try ModelContainer(for: schema, migrationPlan: TendelmMigrationPlan.self,
             configurations: ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none)).usingExplicitTestSaves()
         #expect(try reopened.mainContext.fetch(FetchDescriptor<TimeSinceRecord>()).first?.snapshot == tracker)

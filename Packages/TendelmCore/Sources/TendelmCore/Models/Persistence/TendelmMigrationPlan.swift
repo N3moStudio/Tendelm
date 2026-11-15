@@ -5,7 +5,7 @@ import SwiftData
 /// oldest-to-newest; `stages` bridges each consecutive pair.
 public enum TendelmMigrationPlan: SchemaMigrationPlan {
     public static var schemas: [any VersionedSchema.Type] {
-        [TendelmSchemaV1.self, TendelmSchemaV2.self, TendelmSchemaV3.self, TendelmSchemaV4.self, TendelmSchemaV5.self, TendelmSchemaV6.self]
+        [TendelmSchemaV1.self, TendelmSchemaV2.self, TendelmSchemaV3.self, TendelmSchemaV4.self, TendelmSchemaV5.self, TendelmSchemaV6.self, TendelmSchemaV7.self]
     }
 
     public static var stages: [MigrationStage] {
@@ -23,7 +23,8 @@ public enum TendelmMigrationPlan: SchemaMigrationPlan {
                 toVersion: TendelmSchemaV4.self
             ),
             .lightweight(fromVersion: TendelmSchemaV4.self, toVersion: TendelmSchemaV5.self),
-            .lightweight(fromVersion: TendelmSchemaV5.self, toVersion: TendelmSchemaV6.self)
+            .lightweight(fromVersion: TendelmSchemaV5.self, toVersion: TendelmSchemaV6.self),
+            .lightweight(fromVersion: TendelmSchemaV6.self, toVersion: TendelmSchemaV7.self)
         ]
     }
 }

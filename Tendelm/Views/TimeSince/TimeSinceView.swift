@@ -5,12 +5,15 @@ import TendelmCore
 struct TimeSinceView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.habitTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
     @Query(sort: \TimeSinceRecord.startedAt) private var records: [TimeSinceRecord]
     @State private var showsNew = false
     @State private var undoAction: TimeSinceUndoAction?
     @State private var error: String?
     @State private var feedback = 0
+
+    private var trackers: [TimeSinceTracker] { ItemOrdering.trackers(records.map { $0.snapshot }) }
 
     var body: some View {
         NavigationStack {
@@ -25,17 +28,31 @@ struct TimeSinceView: View {
                             .buttonStyle(.borderedProminent)
                     }
                 } else {
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 14) {
-                            Text("One moment at a time.")
-                                .font(.subheadline).foregroundStyle(Color.kadoForegroundSecondary)
-                            ForEach(records.map { $0.snapshot }) { tracker in
-                                card(tracker)
-                            }
+                    List {
+                        Text("One moment at a time.")
+                            .font(.subheadline).foregroundStyle(Color.kadoForegroundSecondary)
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .moveDisabled(true)
+                        ForEach(trackers) { tracker in
+                            card(tracker)
+                                .frame(maxWidth: 620)
+                                .frame(maxWidth: .infinity)
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 7, leading: 16, bottom: 7, trailing: 16))
                         }
-                        .padding().frame(maxWidth: 620)
-                        .frame(maxWidth: .infinity)
+                        .onMove(perform: moveTrackers)
+                        Text("Hold and drag the handle to reorder. Hold the tracker for Delete.")
+                            .font(.footnote).foregroundStyle(Color.kadoForegroundSecondary)
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .moveDisabled(true)
                     }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
+                    .transaction { if reduceMotion { $0.animation = nil } }
+
                 }
             }
             .background(Color.kadoBackground.ignoresSafeArea())
@@ -58,6 +75,8 @@ struct TimeSinceView: View {
 
     private func card(_ tracker: TimeSinceTracker) -> some View {
         TimeSinceStartGate(start: tracker.currentStart) { now in
+            let index = trackers.firstIndex(where: { $0.id == tracker.id }) ?? 0
+            ZStack(alignment: .topTrailing) {
             VStack(alignment: .leading, spacing: 16) {
                 NavigationLink(value: tracker.id) {
                     VStack(alignment: .leading, spacing: 12) {
@@ -75,6 +94,7 @@ struct TimeSinceView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .padding(.trailing, 44)
                 .accessibilityIdentifier("timeSince.detail.\(tracker.id)")
                 HStack {
                     Button("Log a reset", systemImage: "arrow.counterclockwise") { reset(tracker.id) }
@@ -93,7 +113,22 @@ struct TimeSinceView: View {
                     .accessibilityIdentifier("tracker.delete")
             }
             .accessibilityAction(named: "Delete") { moveToRecentlyDeleted(tracker.id) }
+            ReorderGrip(name: tracker.name, identifier: "reorder.tracker.\(tracker.id)",
+                moveUp: index > 0 ? { moveTrackers(from: IndexSet(integer: index), to: index - 1) } : nil,
+                moveDown: index + 1 < trackers.count ? { moveTrackers(from: IndexSet(integer: index), to: index + 2) } : nil)
+                .padding(10)
+            }
+            .contentShape(.dragPreview, RoundedRectangle(cornerRadius: 20))
         }
+    }
+
+    private func moveTrackers(from source: IndexSet, to destination: Int) {
+        var ids = trackers.map(\.id)
+        ids.move(fromOffsets: source, toOffset: destination)
+        do {
+            try ItemOrderStore().trackers(ids, in: context)
+            feedback += 1
+        } catch { self.error = error.localizedDescription }
     }
 
     private func moveToRecentlyDeleted(_ id: UUID) {

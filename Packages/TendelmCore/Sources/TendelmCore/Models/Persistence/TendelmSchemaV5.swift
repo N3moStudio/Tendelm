@@ -181,5 +181,3 @@ public extension TendelmSchemaV5 {
         }
     }
 }
-public typealias TimeSinceRecord = TendelmSchemaV5.TimeSinceRecord
-public typealias TimeSinceResetRecord = TendelmSchemaV5.TimeSinceResetRecord

@@ -17,14 +17,16 @@ public struct TimeSinceTracker: Identifiable, Hashable, Codable, Sendable {
     public var startedAt: Date
     public var color: HabitColor
     public var resets: [TimeSinceReset]
+    public var sortOrder: Int?
 
     public init(id: UUID = UUID(), name: String, startedAt: Date = .now,
-                color: HabitColor = .green, resets: [TimeSinceReset] = []) {
+                color: HabitColor = .green, resets: [TimeSinceReset] = [], sortOrder: Int? = nil) {
         self.id = id
         self.name = name
         self.startedAt = startedAt
         self.color = color
         self.resets = resets
+        self.sortOrder = sortOrder
     }
 
     public var orderedResets: [TimeSinceReset] {

@@ -11,7 +11,7 @@ struct RecentlyDeletedStoreTests {
     private enum SaveFailure: Error { case simulated }
 
     private func container(url: URL? = nil, v5: Bool = false) throws -> ModelContainer {
-        let schema = v5 ? Schema(versionedSchema: TendelmSchemaV5.self) : Schema(versionedSchema: TendelmSchemaV6.self)
+        let schema = v5 ? Schema(versionedSchema: TendelmSchemaV5.self) : Schema(versionedSchema: TendelmSchemaV7.self)
         let configuration: ModelConfiguration
         if let url { configuration = ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none) }
         else { configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none) }
@@ -19,7 +19,7 @@ struct RecentlyDeletedStoreTests {
             configurations: configuration).usingExplicitTestSaves()
     }
 
-    private func seed(_ context: ModelContext) throws -> (Habit, Completion, TimeSinceTracker) {
+    private func seed(_ context: ModelContext, legacy: Bool = false) throws -> (Habit, Completion, TimeSinceTracker) {
         let habit = HabitRecord(name: "Read slowly", createdAt: now.addingTimeInterval(-1_000),
             archivedAt: now.addingTimeInterval(-50), color: .orange, icon: "book",
             remindersEnabled: true, reminderHour: 17, reminderMinute: 25, sortOrder: 9)
@@ -28,7 +28,13 @@ struct RecentlyDeletedStoreTests {
         context.insert(completion)
         var tracker = TimeSinceTracker(name: "Scrolling", startedAt: now.addingTimeInterval(-900), color: .blue)
         try tracker.reset(at: now.addingTimeInterval(-100))
-        try TimeSinceStore().upsert(tracker, in: context)
+        if legacy {
+            let record = TendelmSchemaV5.TimeSinceRecord(id: tracker.id, name: tracker.name, startedAt: tracker.startedAt, color: tracker.color)
+            context.insert(record)
+            for event in tracker.resets { context.insert(TendelmSchemaV5.TimeSinceResetRecord(id: event.id, date: event.date, tracker: record)) }
+        } else {
+            try TimeSinceStore().upsert(tracker, in: context)
+        }
         try context.save()
         return (habit.snapshot, try #require(completion.snapshot), tracker)
     }
@@ -42,7 +48,7 @@ struct RecentlyDeletedStoreTests {
         let original: (Habit, Completion, TimeSinceTracker)
         do {
             let old = try container(url: url, v5: true)
-            original = try seed(old.mainContext)
+            original = try seed(old.mainContext, legacy: true)
         }
         do {
             let migrated = try container(url: url)

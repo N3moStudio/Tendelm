@@ -29,7 +29,7 @@ struct ScreenshotSeedTests {
         calendar: Calendar = TestCalendar.utc,
         _ body: ([HabitRecord]) throws -> T
     ) throws -> T {
-        let schema = Schema(versionedSchema: TendelmSchemaV5.self)
+        let schema = Schema(versionedSchema: TendelmSchemaV7.self)
         let container = try ModelContainer(
             for: schema,
             migrationPlan: TendelmMigrationPlan.self,

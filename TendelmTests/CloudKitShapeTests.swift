@@ -25,6 +25,8 @@ struct CloudKitShapeTests {
             ("V3", Schema(versionedSchema: TendelmSchemaV3.self)),
             ("V4", Schema(versionedSchema: TendelmSchemaV4.self)),
             ("V5", Schema(versionedSchema: TendelmSchemaV5.self)),
+            ("V6", Schema(versionedSchema: TendelmSchemaV6.self)),
+            ("V7", Schema(versionedSchema: TendelmSchemaV7.self)),
         ]
     }
 

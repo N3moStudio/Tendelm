@@ -14,7 +14,7 @@ struct DevModeControllerTests {
         let storeURL = tempDir.appendingPathComponent("TendelmDev.sqlite")
 
         let factory: () -> ModelContainer = {
-            let schema = Schema(versionedSchema: TendelmSchemaV5.self)
+            let schema = Schema(versionedSchema: TendelmSchemaV7.self)
             return try! ModelContainer(
                 for: schema,
                 migrationPlan: TendelmMigrationPlan.self,

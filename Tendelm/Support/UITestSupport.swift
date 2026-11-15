@@ -273,7 +273,7 @@ nonisolated enum UITestSupport {
     /// with it is unchanged.
     static func productionContainerOverride() -> ModelContainer? {
         guard isRunningUITests else { return nil }
-        let schema = Schema(versionedSchema: TendelmSchemaV6.self)
+        let schema = Schema(versionedSchema: TendelmSchemaV7.self)
         let configuration = ModelConfiguration(
             schema: schema,
             url: productionStoreURL(),
