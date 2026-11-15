@@ -11,12 +11,12 @@ struct HabitHistoryCardGrid: View {
     @Environment(\.today) private var today
     @Environment(\.habitTheme) private var theme
     @Environment(\.dynamicTypeSize) private var typeSize
-    @State private var availableWidth: CGFloat = 300
 
     var body: some View {
         let weeks = typeSize.isAccessibilitySize ? 13 : 26
         let grid = HabitHistoryGrid(habit: habit, completions: completions, today: today, calendar: calendar, weekCount: weeks)
         VStack(alignment: .leading, spacing: 6) {
+            HistoryGridFrame(weeks: weeks) {
             GeometryReader { geometry in
                 let gap: CGFloat = 2
                 let labelWidth: CGFloat = 22
@@ -59,14 +59,13 @@ struct HabitHistoryCardGrid: View {
                     }
                 }
             }
-            .frame(height: min(14, max(4, (availableWidth - 22 - CGFloat(weeks - 1) * 2) / CGFloat(weeks))) * 7 + 33)
-            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { availableWidth = $0 }
+            }
             .dynamicTypeSize(.medium)
-            .accessibilityHidden(true)
-            .allowsHitTesting(false)
         Text(habit.type == .negative ? "Darker = slip recorded" : "Darker = more activity recorded")
             .font(.caption2).foregroundStyle(Color.kadoForegroundSecondary)
         }
+        .accessibilityHidden(true)
+        .allowsHitTesting(false)
     }
 
     private func weekday(_ index: Int) -> String {
@@ -89,6 +88,25 @@ struct HabitHistoryCardGrid: View {
         case .scored(let value), .offSchedule(let value):
             if value >= 1 { return habit.color.color(in: theme) }
             return habit.color.tint(value > 0 ? .tilePartial : .tileLight, in: theme)
+        }
+    }
+}
+
+/// Size directly from the parent proposal. A context-menu preview can propose a
+/// different width; feeding both widths back into shared @State causes relayout.
+private struct HistoryGridFrame: Layout {
+    let weeks: Int
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width ?? 300
+        let cell = min(14, max(4, (width - 22 - CGFloat(weeks - 1) * 2) / CGFloat(weeks)))
+        return CGSize(width: width, height: cell * 7 + 33)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        for subview in subviews {
+            subview.place(at: bounds.origin, anchor: .topLeading,
+                          proposal: ProposedViewSize(width: bounds.width, height: bounds.height))
         }
     }
 }

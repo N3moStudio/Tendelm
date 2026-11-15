@@ -49,6 +49,7 @@ run unit test -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=
   -derivedDataPath "$out/DerivedData" -resultBundlePath "$out/Unit.xcresult" -only-testing:TendelmTests CODE_SIGNING_ALLOWED=NO
 run interactions test-without-building -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=iOS Simulator,id=$phone" \
   -derivedDataPath "$out/DerivedData" -resultBundlePath "$out/Interactions.xcresult" \
+  -only-testing:TendelmUITests/RecentlyDeletedUITests/testCardsAndOverviewDeleteSelection \
   -only-testing:TendelmUITests/PersonalEditionTests/testHistoryContextDeleteCanUndoExactReset \
   -only-testing:TendelmUITests/PersonalEditionTests/testPreviousResetCancelSaveUndoAndRelaunch \
   -only-testing:TendelmUITests/PersonalEditionTests/testSwipeDeleteHistoryUndoAndRelaunch \
@@ -62,7 +63,6 @@ run settings test-without-building -project Tendelm.xcodeproj -scheme Tendelm -d
   -only-testing:TendelmUITests/DevModeSwapTests \
   -only-testing:TendelmUITests/RecentlyDeletedUITests/testGroupedSettingsAtLargeText \
   -only-testing:TendelmUITests/RecentlyDeletedUITests/testTodayDeleteAndRestoreSurviveRelaunch \
-  -only-testing:TendelmUITests/RecentlyDeletedUITests/testCardsAndOverviewDeleteSelection \
   -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 360 \
   -maximum-test-execution-time-allowance 420 CODE_SIGNING_ALLOWED=NO
 xcrun simctl ui "$phone" appearance dark

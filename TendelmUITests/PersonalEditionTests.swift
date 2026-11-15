@@ -16,6 +16,7 @@ final class PersonalEditionTests: TendelmUITestCase {
         let identifier = row.identifier
         let before = historyRows(in: app).count
         scrollTo(row, in: app)
+        photograph(app, "time-since-month-history")
         row.press(forDuration: 1)
         let deletion = buttons("timeSince.history.menuDelete.", in: app).firstMatch
         XCTAssertTrue(deletion.waitForExistence(timeout: 5))

@@ -430,11 +430,7 @@ struct TodayView: View {
 
     /// The two Today sections, snapshotted from the live records.
     ///
-    /// The split rule — "the schedule asks for it today, or the user
-    /// already logged progress today anyway", which keeps a row
-    /// visible with its tick once a daysPerWeek rolling quota
-    /// saturates — lives on `FrequencyEvaluating` so this view and the
-    /// widget snapshot can't drift apart.
+    /// Placement follows the schedule, so logging does not move a row.
     private var sections: (due: [TodayRow], other: [TodayRow]) {
         TodayRow.sections(
             from: activeHabits,

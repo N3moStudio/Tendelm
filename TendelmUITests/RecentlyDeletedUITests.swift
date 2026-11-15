@@ -73,6 +73,8 @@ final class RecentlyDeletedUITests: TendelmUITestCase {
         app.buttons["Cards"].tap()
         let first = todayRows(in: app).firstMatch
         let firstID = habitID(of: first, prefix: "today.row.")
+        XCTAssertFalse(first.label.hasPrefix("Darker"), "The decorative legend must not replace the habit label.")
+        capture(app, "today-cards-before-delete")
         first.press(forDuration: 1)
         assertDeleteOnly(in: app, identifier: "habit.delete")
         app.buttons["habit.delete"].tap()

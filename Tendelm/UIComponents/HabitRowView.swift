@@ -83,6 +83,7 @@ struct HabitRowView: View {
         // name is both localized and user-editable.
         .accessibilityIdentifier(AccessibilityID.Today.row(habit.id))
         .accessibilityLabel(accessibilityLabelText)
+        .accessibilityHint(habit.type == .negative ? "Darker calendar squares mean a slip was recorded." : "Darker calendar squares mean more activity was recorded.")
         .accessibilityValue(accessibilityValueText)
         .accessibilityActions { rowAccessibilityActions }
     }
