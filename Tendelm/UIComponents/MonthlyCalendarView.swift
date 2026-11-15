@@ -249,7 +249,7 @@ struct MonthlyCalendarView<PopoverContent: View>: View {
         }
         switch habit.type {
         case .negative:
-            return completedOnDay ? .missed : .completed
+            return completedOnDay ? .completed : (dayIsDue(day) ? .missed : .nonDue)
         case .binary, .counter, .timer:
             if completedOnDay { return .completed }
             return dayIsDue(day) ? .missed : .nonDue
@@ -300,8 +300,8 @@ struct MonthlyCalendarView<PopoverContent: View>: View {
         let dateString = formatter.string(from: day)
         let stateString: String
         switch state {
-        case .completed: stateString = String(localized: "completed")
-        case .missed: stateString = String(localized: "missed")
+        case .completed: stateString = habit.type == .negative ? "Slip recorded" : String(localized: "completed")
+        case .missed: stateString = habit.type == .negative ? "No slip recorded" : String(localized: "missed")
         case .nonDue: stateString = String(localized: "not scheduled")
         case .beforeStart: stateString = String(localized: "before tracking started")
         case .future: stateString = String(localized: "upcoming")

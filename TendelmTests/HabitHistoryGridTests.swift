@@ -4,6 +4,20 @@ import TendelmCore
 
 @Suite("Habit card history")
 struct HabitHistoryGridTests {
+    @Test("Slip activity gets darker without awarding goal credit")
+    func slipActivityIsNotGoalSuccess() throws {
+        let calendar = Calendar(identifier: .gregorian)
+        let today = calendar.startOfDay(for: Date(timeIntervalSince1970: 1_700_000_000))
+        let habit = Habit(name: "No social media", frequency: .daily, type: .negative, createdAt: today)
+        let slip = Completion(habitID: habit.id, date: today, value: 1)
+        let empty = HabitHistoryGrid(habit: habit, completions: [], today: today, calendar: calendar)
+        let recorded = HabitHistoryGrid(habit: habit, completions: [slip], today: today, calendar: calendar)
+        #expect(empty.days.first { $0.isToday }?.state == .scored(0))
+        #expect(recorded.days.first { $0.isToday }?.state == .scored(1))
+        #expect(DailyValue.compute(for: habit, completionsOnDay: [slip]) == 0)
+        #expect(DailyValue.compute(for: habit, completionsOnDay: []) == 1)
+    }
+
     @Test("A grid has seven cells per week, honors week start, and marks the future")
     func gridShape() throws {
         var calendar = Calendar(identifier: .gregorian)

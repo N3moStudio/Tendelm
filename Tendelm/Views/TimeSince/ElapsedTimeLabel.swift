@@ -45,6 +45,16 @@ struct ElapsedTimeLabel: View {
     private func durationLabel(_ duration: ElapsedDuration) -> some View {
         ViewThatFits(in: .horizontal) {
             digits(duration, vertical: false)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    unit(duration.days, label: "days")
+                    unit(duration.hours, label: "hrs")
+                }
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    unit(duration.minutes, label: "min")
+                    if showsSeconds { unit(duration.seconds, label: "sec") }
+                }
+            }.fixedSize(horizontal: true, vertical: false)
             digits(duration, vertical: true)
         }
         .monospacedDigit()

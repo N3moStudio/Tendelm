@@ -35,7 +35,7 @@ struct TodayRow: Identifiable {
 extension TodayRow {
     /// Snapshots every record, then splits the rows into the two
     /// sections Today renders: the ones the schedule asks for today
-    /// (or that already have progress logged today), and the rest.
+    /// and the rest. Logging today never moves a row between these groups.
     ///
     /// The snapshot happens once, up front, so the two sections and
     /// every derived metric read the same frozen data — and so nothing
@@ -52,11 +52,10 @@ extension TodayRow {
         // MainActor-isolated initializer as a function value to a
         // nonisolated generic loses the isolation and warns.
         for row in records.map({ TodayRow($0) }) {
-            let isDue = evaluator.isDueOrLogged(
+            let isDue = evaluator.isDue(
                 habit: row.habit,
                 on: now,
-                completions: row.completions,
-                calendar: calendar
+                completions: row.completions
             )
             if isDue {
                 due.append(row)

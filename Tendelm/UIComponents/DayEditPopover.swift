@@ -70,6 +70,10 @@ struct DayEditPopover: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
+            if habit.type == .negative {
+                Text(isRecorded ? "Slip recorded" : "No slip recorded")
+                    .font(.subheadline).foregroundStyle(Color.kadoForegroundSecondary)
+            }
             content
             noteSection
         }
@@ -133,7 +137,7 @@ struct DayEditPopover: View {
                     ? String(localized: "Mark as not done")
                     : String(localized: "Mark as done"),
                 systemImage: isRecorded ? "xmark.circle" : "checkmark.circle.fill",
-                active: !isRecorded
+                active: isRecorded
             )
         }
         .buttonStyle(.plain)
@@ -149,8 +153,8 @@ struct DayEditPopover: View {
         } label: {
             toggleLabel(
                 title: isRecorded
-                    ? String(localized: "Mark as not slipped")
-                    : String(localized: "Mark as slipped"),
+                    ? String(localized: "Remove slip")
+                    : String(localized: "Log a slip"),
                 systemImage: isRecorded ? "xmark.circle" : "hand.raised.fill",
                 active: !isRecorded
             )

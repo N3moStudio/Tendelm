@@ -115,8 +115,8 @@ struct TodayRowTests {
         #expect(other.map(\.habit.name) == ["Mondays"])
     }
 
-    @Test("A habit logged today stays in the due section even when off schedule")
-    func loggedOffScheduleHabitStaysDue() throws {
+    @Test("Logging an off-schedule habit does not move it into the planned section")
+    func loggedOffScheduleHabitStaysOther() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
 
@@ -127,6 +127,9 @@ struct TodayRowTests {
             createdAt: calendar.date(byAdding: .day, value: -30, to: now)!
         )
         ctx.insert(mondayOnly)
+        let before = TodayRow.sections(from: [mondayOnly], on: now, evaluator: evaluator, calendar: calendar)
+        #expect(before.0.isEmpty)
+        #expect(before.1.map(\.habit.id) == [mondayOnly.id])
         ctx.insert(CompletionRecord(date: now, value: 1, habit: mondayOnly))
         try ctx.save()
 
@@ -137,7 +140,7 @@ struct TodayRowTests {
             calendar: calendar
         )
 
-        #expect(due.map(\.habit.name) == ["Mondays"])
-        #expect(other.isEmpty)
+        #expect(due.isEmpty)
+        #expect(other.map(\.habit.name) == ["Mondays"])
     }
 }

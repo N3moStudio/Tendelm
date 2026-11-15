@@ -115,7 +115,8 @@ struct OverviewView: View {
             days: days,
             today: today,
             calendar: calendar,
-            frequencyEvaluator: frequencyEvaluator
+            frequencyEvaluator: frequencyEvaluator,
+            showsRecordedActivity: true
         )
         let metrics = Dictionary(uniqueKeysWithValues: snapshots.map { (habit, comps) in
             let streak = streakCalculator.current(for: habit, completions: comps, asOf: now)
@@ -431,12 +432,12 @@ struct OverviewView: View {
         case .beforeStart:
             state = String(localized: "before tracking started")
         case .scored(let s):
-            state = completionPhrase(for: s)
+            state = habit.type == .negative ? (s > 0 ? "Slip recorded" : "No slip recorded") : completionPhrase(for: s)
         case .offSchedule(let s):
             // The hollow cell is a purely visual distinction, so
             // VoiceOver has to say it out loud.
             state = String(
-                localized: "\(completionPhrase(for: s)), off schedule",
+                localized: "\(habit.type == .negative ? "Slip recorded" : completionPhrase(for: s)), off schedule",
                 comment: "Overview cell state for a day logged outside the habit's schedule. Argument: the completion phrase, e.g. 'completed'."
             )
         }

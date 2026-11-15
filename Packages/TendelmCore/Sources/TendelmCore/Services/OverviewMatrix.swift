@@ -103,7 +103,9 @@ public enum OverviewMatrix {
         days: [Date],
         today: Date,
         calendar: Calendar,
-        frequencyEvaluator: any FrequencyEvaluating
+        frequencyEvaluator: any FrequencyEvaluating,
+        // Calendars can show recorded slips; scoring callers retain goal-success values.
+        showsRecordedActivity: Bool = false
     ) -> [MatrixRow] {
         let todayStart = calendar.startOfDay(for: today)
         let activeHabits = habits
@@ -139,7 +141,9 @@ public enum OverviewMatrix {
                     completions: habitCompletions
                 ) {
                     return .scored(
-                        DailyValue.compute(for: habit, completionsOnDay: completionsOnDay)
+                        showsRecordedActivity && habit.type == .negative
+                            ? (completionsOnDay.contains { $0.value > 0 } ? 1 : 0)
+                            : DailyValue.compute(for: habit, completionsOnDay: completionsOnDay)
                     )
                 }
                 // Off-schedule, but the user logged something anyway.
@@ -152,7 +156,9 @@ public enum OverviewMatrix {
                 // maps to a value of 0.
                 if completionsOnDay.contains(where: { $0.value > 0 }) {
                     return .offSchedule(
-                        DailyValue.compute(for: habit, completionsOnDay: completionsOnDay)
+                        showsRecordedActivity && habit.type == .negative
+                            ? (completionsOnDay.contains { $0.value > 0 } ? 1 : 0)
+                            : DailyValue.compute(for: habit, completionsOnDay: completionsOnDay)
                     )
                 }
                 // The common case for a sparse schedule — no value

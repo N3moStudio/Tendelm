@@ -24,7 +24,7 @@ public struct HabitHistoryGrid: Sendable {
         }
         let states = OverviewMatrix.compute(
             habits: [habit], completions: completions, days: dates, today: anchor,
-            calendar: calendar, frequencyEvaluator: DefaultFrequencyEvaluator(calendar: calendar)
+            calendar: calendar, frequencyEvaluator: DefaultFrequencyEvaluator(calendar: calendar), showsRecordedActivity: true
         ).first?.days ?? Array(repeating: .notDue, count: dates.count)
         days = zip(dates, states).map {
             HabitHistoryDay(date: $0.0, state: $0.1, isToday: calendar.isDate($0.0, inSameDayAs: anchor))

@@ -6,7 +6,7 @@ struct TimeSinceDetailView: View {
     let trackerID: UUID
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.calendar) private var calendar
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
     @Query private var records: [TimeSinceRecord]
     private enum Sheet: String, Identifiable {
@@ -30,15 +30,16 @@ struct TimeSinceDetailView: View {
                             VStack(alignment: .leading, spacing: 16) {
                                 Text(value.name).font(.title2.weight(.semibold))
                                     .fixedSize(horizontal: false, vertical: true)
-                                ElapsedTimeLabel(start: value.currentStart, showsSeconds: true)
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Text(now < value.currentStart ? "Scheduled start" : "Time since last reset")
+                                        .font(.subheadline).foregroundStyle(Color.kadoForegroundSecondary)
+                                    ElapsedTimeLabel(start: value.currentStart, showsSeconds: true)
+                                }
                                 Text(now < value.currentStart
                                     ? "Starts \(value.currentStart.formatted(date: .abbreviated, time: .shortened))"
                                     : "Since \(value.currentStart.formatted(date: .abbreviated, time: .shortened))")
                                     .font(.footnote).foregroundStyle(Color.kadoForegroundSecondary)
-                                let layout = dynamicTypeSize.isAccessibilitySize
-                                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
-                                    : AnyLayout(HStackLayout(spacing: 8))
-                                layout { resetActions(value, now: now) }
+                                VStack(alignment: .leading, spacing: 8) { resetActions(value, now: now) }
                                     .font(.subheadline)
                             }.padding(.vertical, 8)
                         }
@@ -46,11 +47,22 @@ struct TimeSinceDetailView: View {
                         Text("A reset records what happened. Your earlier time still counts.")
                     }
                     .listRowBackground(Color.kadoBackgroundSecondary)
-                    Section("History") {
-                        ForEach(value.orderedResets.reversed()) { event in
+                    let groups = Dictionary(grouping: value.orderedResets) { event in
+                        calendar.dateInterval(of: .month, for: event.date)?.start ?? event.date
+                    }
+                    ForEach(groups.keys.sorted(by: >), id: \.self) { month in
+                    Section(month.formatted(.dateTime.month(.wide).year())) {
+                        ForEach((groups[month] ?? []).reversed()) { event in
                             VStack(alignment: .leading, spacing: 4) {
+                                ViewThatFits(in: .horizontal) {
+                                    HStack {
+                                        Text(event.date, format: .dateTime.month(.abbreviated).day()).fontWeight(.medium)
+                                        Spacer()
+                                        Text(event.date, format: .dateTime.hour().minute().second()).monospacedDigit()
+                                    }
+                                    Text(event.date, format: .dateTime.day().month().year().hour().minute().second())
+                                }
                                 Text("Reset logged")
-                                Text(event.date, format: .dateTime.day().month().year().hour().minute().second())
                                     .font(.footnote).foregroundStyle(Color.kadoForegroundSecondary)
                             }
                             .accessibilityElement(children: .combine)
@@ -65,8 +77,11 @@ struct TimeSinceDetailView: View {
                                     .accessibilityIdentifier("timeSince.history.delete.\(event.id)")
                             }
                         }
+                    }.listRowBackground(Color.kadoBackgroundSecondary)
+                    }
+                    Section("Start date") {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Start date")
+                            Text("Tracking began")
                             Text(value.startedAt, format: .dateTime.day().month().year().hour().minute())
                                 .font(.footnote).foregroundStyle(Color.kadoForegroundSecondary)
                         }

@@ -64,7 +64,12 @@ struct HabitRowView: View {
                     .foregroundStyle(Color.kadoForeground)
                     .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
                     .fixedSize(horizontal: false, vertical: true)
-                metricsLine
+                if habit.type == .negative {
+                    Text(isComplete ? "Slip recorded today" : "No slip recorded today")
+                        .font(.caption).foregroundStyle(Color.kadoForegroundSecondary)
+                } else {
+                    metricsLine
+                }
             }
             if !typeSize.isAccessibilitySize { Spacer(minLength: 8) }
             trailingControl
@@ -90,9 +95,9 @@ struct HabitRowView: View {
     private var rowAccessibilityActions: some View {
         if let onToggle {
             Button(
-                isComplete
-                    ? String(localized: "Mark as not done")
-                    : String(localized: "Mark as done"),
+                habit.type == .negative
+                    ? (isComplete ? "Remove slip" : "Log a slip")
+                    : (isComplete ? String(localized: "Mark as not done") : String(localized: "Mark as done")),
                 action: onToggle
             )
         }
@@ -225,23 +230,18 @@ struct HabitRowView: View {
     private var negativePill: some View {
         if let onToggle {
             Button(action: onToggle) {
-                if isComplete {
-                    Label("Slipped", systemImage: "checkmark")
-                        .labelStyle(.titleAndIcon)
-                } else {
-                    Text("Slipped")
-                }
+                Text(isComplete ? "Slip recorded" : "Log a slip")
+                    .font(.subheadline.weight(.medium))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 10)
+                    .frame(minHeight: 44)
+                    .foregroundStyle(habit.color.onTint(in: habitTheme))
+                    .background(isComplete ? habit.color.tint(.mark, in: habitTheme) : Color.clear, in: Capsule())
+                    .overlay(Capsule().strokeBorder(habit.color.tint(.outline, in: habitTheme)))
             }
-            // Outlined when *not* slipped (calm, ready); filled in the
-            // habit's hue with a checkmark when slipped today (recorded).
-            .modifier(NegativePillStyleModifier(color: habit.color, isSlipped: isComplete))
-            .controlSize(.small)
-            .sensoryFeedback(.success, trigger: state.status)
-            .accessibilityLabel(
-                isComplete
-                    ? String(localized: "Mark as not done")
-                    : String(localized: "Mark as done")
-            )
+            .buttonStyle(.borderless)
+            .sensoryFeedback(.selection, trigger: state.status)
+            .accessibilityLabel(isComplete ? "Slip recorded. Remove slip" : "Log a slip")
         }
     }
 
@@ -368,7 +368,9 @@ struct HabitRowView: View {
 
     private var accessibilityLabelText: String {
         switch habit.type {
-        case .binary, .negative:
+        case .negative:
+            return "\(habit.name), \(isComplete ? "Slip recorded" : "No slip recorded")"
+        case .binary:
             let stateText = isComplete
                 ? String(localized: "done")
                 : String(localized: "not done")
@@ -409,34 +411,6 @@ struct HabitRowView: View {
             return String(localized: "\(progress), streak \(streak), score \(scorePercent) percent")
         }
         return String(localized: "\(progress), score \(scorePercent) percent")
-    }
-}
-
-/// Conditional style swap — `.bordered` vs `.borderedProminent` aren't
-/// the same opaque type, so a plain ternary doesn't compile. Using a
-/// `ViewModifier` keeps the call site flat.
-///
-/// The system button styles keep the pill's metrics; only the tint is
-/// the habit's. `.bordered` draws its fill at the system's own alpha,
-/// so this is the one habit-coloured surface that is "about" the
-/// handoff's 20% rather than exactly it — the label, at least, is the
-/// palette's ink-on-tint.
-private struct NegativePillStyleModifier: ViewModifier {
-    @Environment(\.habitTheme) private var habitTheme
-    let color: HabitColor
-    let isSlipped: Bool
-    func body(content: Content) -> some View {
-        if isSlipped {
-            content
-                .buttonStyle(.borderedProminent)
-                .tint(color.color(in: habitTheme))
-                .foregroundStyle(color.onFill(in: habitTheme))
-        } else {
-            content
-                .buttonStyle(.bordered)
-                .tint(color.color(in: habitTheme))
-                .foregroundStyle(color.onTint(in: habitTheme))
-        }
     }
 }
 
