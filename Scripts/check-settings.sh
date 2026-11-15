@@ -42,6 +42,20 @@ xcodebuild -version > "$out/toolchain.log"
 swift --version >> "$out/toolchain.log"
 phone=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; a=[v for vs in json.load(sys.stdin)["devices"].values() for v in vs if "iPhone" in v["name"]]; print(next((v["udid"] for v in a if "SE" in v["name"] or "16e" in v["name"]),a[0]["udid"]))')
 pad=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(v["udid"] for a in json.load(sys.stdin)["devices"].values() for v in a if "iPad" in v["name"]))')
+run_ipad() {
+xcrun simctl boot "$pad" 2>/dev/null || true
+xcrun simctl bootstatus "$pad" -b
+xcrun simctl ui "$pad" appearance light
+run ipad "$1" -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=iOS Simulator,id=$pad" \
+  -derivedDataPath "$out/DerivedData" -resultBundlePath "$out/iPad.xcresult" \
+  -only-testing:TendelmUITests/SettingsPresentationUITests \
+  -only-testing:TendelmUITests/PasteImportTests/testHistoryPastePreviewCancelAndRepeatImport \
+  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO
+}
+if [[ "${1:-full}" == ipad ]]; then
+  run_ipad test
+  exit 0
+fi
 xcrun simctl boot "$phone" 2>/dev/null || true
 xcrun simctl bootstatus "$phone" -b
 xcrun simctl ui "$phone" appearance light
@@ -77,12 +91,6 @@ xcrun simctl ui "$phone" appearance dark
 run dark test-without-building -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=iOS Simulator,id=$phone" \
   -derivedDataPath "$out/DerivedData" -resultBundlePath "$out/Dark.xcresult" -only-testing:TendelmUITests/SettingsPresentationUITests \
   -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO
-xcrun simctl boot "$pad" 2>/dev/null || true
-xcrun simctl bootstatus "$pad" -b
-xcrun simctl ui "$pad" appearance light
-run ipad test-without-building -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=iOS Simulator,id=$pad" \
-  -derivedDataPath "$out/DerivedData" -resultBundlePath "$out/iPad.xcresult" \
-  -only-testing:TendelmUITests/SettingsPresentationUITests \
-  -only-testing:TendelmUITests/PasteImportTests/testHistoryPastePreviewCancelAndRepeatImport \
-  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO
+xcrun simctl shutdown "$phone"
+run_ipad test-without-building
 echo "Simulator validation complete. No IPA was built."

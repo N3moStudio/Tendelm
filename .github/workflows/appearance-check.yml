@@ -24,6 +24,10 @@ jobs:
           SCHEDULED_MUTATION: ${{ inputs.scheduled_mutation }}
         run: |
           sudo xcode-select -s /Applications/Xcode_26.6.app/Contents/Developer
+          if [ "$TEST_SCOPE" = "release-ipad" ]; then
+            bash Scripts/check-settings.sh ipad
+            exit 0
+          fi
           if [ "$TEST_SCOPE" = "release-recovery" ]; then
             bash Scripts/check-settings.sh recovery
             exit 0
