@@ -12,8 +12,10 @@ struct TimeSinceView: View {
     @State private var undoAction: TimeSinceUndoAction?
     @State private var error: String?
     @State private var feedback = 0
+    @State private var reorder = ReorderSession()
+    @Environment(\.scenePhase) private var scenePhase
 
-    private var trackers: [TimeSinceTracker] { ItemOrdering.trackers(records.map { $0.snapshot }) }
+    private var trackers: [TimeSinceTracker] { reorder.ordered(ItemOrdering.trackers(records.map { $0.snapshot })) }
 
     var body: some View {
         NavigationStack {
@@ -42,7 +44,7 @@ struct TimeSinceView: View {
                                 .listRowSeparator(.hidden)
                                 .listRowInsets(EdgeInsets(top: 7, leading: 16, bottom: 7, trailing: 16))
                         }
-                        .onMove(perform: moveTrackers)
+
                         Text("Hold and drag the handle to reorder. Hold the tracker for Delete.")
                             .font(.footnote).foregroundStyle(Color.kadoForegroundSecondary)
                             .listRowBackground(Color.clear)
@@ -50,6 +52,9 @@ struct TimeSinceView: View {
                             .moveDisabled(true)
                     }
                     .listStyle(.plain)
+                    .onDisappear { reorder.cancel() }
+                    .onChange(of: scenePhase) { _, phase in if phase != .active { reorder.cancel() } }
+                    .onChange(of: records.map(\.id)) { _, _ in reorder.cancel() }
                     .scrollContentBackground(.hidden)
                     .transaction { if reduceMotion { $0.animation = nil } }
 
@@ -114,21 +119,30 @@ struct TimeSinceView: View {
             }
             .accessibilityAction(named: "Delete") { moveToRecentlyDeleted(tracker.id) }
             ReorderGrip(name: tracker.name, identifier: "reorder.tracker.\(tracker.id)",
+                id: tracker.id,
+                begin: { reorder.begin(tracker.id, among: trackers.map(\.id), reduceMotion: reduceMotion) },
+                end: { reorder.cancel() },
                 moveUp: index > 0 ? { moveTrackers(from: IndexSet(integer: index), to: index - 1) } : nil,
                 moveDown: index + 1 < trackers.count ? { moveTrackers(from: IndexSet(integer: index), to: index + 2) } : nil)
                 .padding(10)
             }
-            .contentShape(.dragPreview, RoundedRectangle(cornerRadius: 20))
+            .onDrop(of: [ReorderDragSource.typeIdentifier],
+                    delegate: ReorderDropDelegate(session: reorder, target: tracker.id, commit: saveTrackerOrder))
         }
     }
 
     private func moveTrackers(from source: IndexSet, to destination: Int) {
         var ids = trackers.map(\.id)
         ids.move(fromOffsets: source, toOffset: destination)
+        _ = saveTrackerOrder(ids)
+    }
+
+    private func saveTrackerOrder(_ ids: [UUID]) -> Bool {
         do {
             try ItemOrderStore().trackers(ids, in: context)
             feedback += 1
-        } catch { self.error = error.localizedDescription }
+            return true
+        } catch { self.error = error.localizedDescription; return false }
     }
 
     private func moveToRecentlyDeleted(_ id: UUID) {

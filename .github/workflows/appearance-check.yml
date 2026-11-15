@@ -24,8 +24,8 @@ jobs:
           SCHEDULED_MUTATION: ${{ inputs.scheduled_mutation }}
         run: |
           sudo xcode-select -s /Applications/Xcode_26.6.app/Contents/Developer
-          if [ "$TEST_SCOPE" = "reordering" ]; then
-            bash Scripts/check-settings.sh reordering
+          if [ "$TEST_SCOPE" = "reordering" ] || [ "$TEST_SCOPE" = "reordering-ui" ]; then
+            bash Scripts/check-settings.sh "$TEST_SCOPE"
             exit 0
           fi
           if [ "$TEST_SCOPE" = "release-ipad" ]; then

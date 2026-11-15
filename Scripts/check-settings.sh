@@ -59,9 +59,14 @@ fi
 xcrun simctl boot "$phone" 2>/dev/null || true
 xcrun simctl bootstatus "$phone" -b
 xcrun simctl ui "$phone" appearance light
-if [[ "${1:-full}" == reordering ]]; then
+if [[ "${1:-full}" == reordering || "${1:-full}" == reordering-ui ]]; then
+if [[ "${1:-full}" == reordering-ui ]]; then
+run unit test -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=iOS Simulator,id=$phone" \
+  -derivedDataPath "$out/DerivedData" -resultBundlePath "$out/Unit.xcresult" -only-testing:TendelmTests/ReorderSessionTests CODE_SIGNING_ALLOWED=NO
+else
 run unit test -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=iOS Simulator,id=$phone" \
   -derivedDataPath "$out/DerivedData" -resultBundlePath "$out/Unit.xcresult" -only-testing:TendelmTests CODE_SIGNING_ALLOWED=NO
+fi
 run reordering test-without-building -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=iOS Simulator,id=$phone" \
   -derivedDataPath "$out/DerivedData" -resultBundlePath "$out/Reordering.xcresult" \
   -only-testing:TendelmUITests/ReorderingUITests \
