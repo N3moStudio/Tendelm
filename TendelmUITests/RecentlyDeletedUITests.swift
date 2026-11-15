@@ -15,7 +15,7 @@ final class RecentlyDeletedUITests: TendelmUITestCase {
         row.press(forDuration: 1)
         assertDeleteOnly(in: app, identifier: "habit.delete")
         capture(app, "17-habit-delete-menu")
-        app.buttons["habit.delete"].tap()
+        tapHabitDeleteMenu(in: app)
         XCTAssertTrue(todayRow(id, in: app).waitForNonExistence(timeout: 5))
         tapTab(.settings, in: app)
         capture(app, "22-grouped-settings")
@@ -77,7 +77,7 @@ final class RecentlyDeletedUITests: TendelmUITestCase {
         capture(app, "today-cards-before-delete")
         first.press(forDuration: 1)
         assertDeleteOnly(in: app, identifier: "habit.delete")
-        app.buttons["habit.delete"].tap()
+        tapHabitDeleteMenu(in: app)
         XCTAssertTrue(todayRow(firstID, in: app).waitForNonExistence(timeout: 5))
         tapTab(.overview, in: app)
         let labels = elements(withIdentifierPrefix: "overview.label.", in: app)
@@ -86,7 +86,7 @@ final class RecentlyDeletedUITests: TendelmUITestCase {
         let labelID = label.identifier
         label.press(forDuration: 1)
         assertDeleteOnly(in: app, identifier: "habit.delete")
-        app.buttons["habit.delete"].tap()
+        tapHabitDeleteMenu(in: app)
         XCTAssertTrue(app.descendants(matching: .any)[labelID].firstMatch.waitForNonExistence(timeout: 5))
         openSettingsPage("settings.recentlyDeleted", in: app)
         app.buttons["trash.select"].tap()
@@ -134,7 +134,7 @@ final class RecentlyDeletedUITests: TendelmUITestCase {
         var app = launchApp(seedProduction: true, seedTimeSince: true)
         waitForTodayRows(in: app)
         todayRows(in: app).firstMatch.press(forDuration: 1)
-        app.buttons["habit.delete"].tap()
+        tapHabitDeleteMenu(in: app)
         openSettingsPage("settings.privacy", in: app)
         scrollTo(app.buttons["settings.erase"], in: app)
         app.buttons["settings.erase"].tap()
@@ -178,6 +178,16 @@ final class RecentlyDeletedUITests: TendelmUITestCase {
         XCTAssertLessThan(app.staticTexts["Paste backup text"].firstMatch.frame.height, app.frame.height * 0.3)
         capture(app, "21-import-settings-large-text")
         scrollTo(app.links["json.site"].firstMatch, in: app)
+    }
+
+    @MainActor
+    private func tapHabitDeleteMenu(in app: XCUIApplication) {
+        let deletion = app.buttons["habit.delete"]
+        XCTAssertTrue(deletion.waitForExistence(timeout: 5))
+        // iOS 26's glass context menu can return a stale synthesized hit point
+        // after its preview animation stalls. Tap the current menu center.
+        deletion.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertTrue(deletion.waitForNonExistence(timeout: 5), "The menu must dismiss after Delete.")
     }
 
     @MainActor

@@ -14,8 +14,8 @@ permissions:
   contents: read
 jobs:
   check:
-    runs-on: macos-15
-    timeout-minutes: 25
+    runs-on: macos-26
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - name: Run focused interactions
@@ -23,8 +23,11 @@ jobs:
           TEST_SCOPE: ${{ inputs.suite }}
           SCHEDULED_MUTATION: ${{ inputs.scheduled_mutation }}
         run: |
-          DEVELOPER_APP=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
-          sudo xcode-select -s "$DEVELOPER_APP/Contents/Developer"
+          sudo xcode-select -s /Applications/Xcode_26.6.app/Contents/Developer
+          if [ "$TEST_SCOPE" = "release-recovery" ]; then
+            bash Scripts/check-settings.sh recovery
+            exit 0
+          fi
           mkdir -p output
           DEVICE_ID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(v["udid"] for a in d["devices"].values() for v in a if "iPhone" in v["name"]))')
           echo "$DEVICE_ID" > output/simulator-id.txt
@@ -48,5 +51,10 @@ jobs:
         if: always()
         with:
           name: Tendelm
-          path: output/
+          include-hidden-files: true
+          path: |
+            output/
+            .settings-check-*/*.log
+            .settings-check-*/*.json
+            .settings-check-*/attachments/**/*
           retention-days: 14
