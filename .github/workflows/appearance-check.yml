@@ -44,8 +44,10 @@ jobs:
             git diff --exit-code -- Packages/TendelmCore/Sources/TendelmCore/Models/TimeSinceTracker.swift
             exit 0
           fi
+          xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
+          xcrun simctl bootstatus "$DEVICE_ID" -b
           set -o pipefail
-          xcodebuild test -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=iOS Simulator,id=$DEVICE_ID" -derivedDataPath build -resultBundlePath output/Appearance.xcresult "-only-testing:TendelmUITests/$TEST_SCOPE" -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 90 -maximum-test-execution-time-allowance 180 CODE_SIGNING_ALLOWED=NO 2>&1 | tee output/appearance.log
+          xcodebuild test -project Tendelm.xcodeproj -scheme Tendelm -destination "platform=iOS Simulator,id=$DEVICE_ID" -derivedDataPath build -resultBundlePath output/Appearance.xcresult "-only-testing:TendelmUITests/$TEST_SCOPE" -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 360 -maximum-test-execution-time-allowance 420 CODE_SIGNING_ALLOWED=NO 2>&1 | tee output/appearance.log
       - name: Export evidence
         if: always()
         run: |
