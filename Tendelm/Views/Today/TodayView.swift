@@ -408,13 +408,12 @@ struct TodayView: View {
             ReorderGrip(name: item.habit.name, identifier: "reorder.habit.\(item.id)",
                 id: item.id,
                 begin: { reorder.begin(item.id, among: section.map(\.id), reduceMotion: reduceMotion) },
-                end: { reorder.cancel() },
+                session: reorder,
+                commit: saveHabitOrder,
                 moveUp: index > 0 ? { moveHabits(section, from: IndexSet(integer: index), to: index - 1) } : nil,
                 moveDown: index + 1 < section.count ? { moveHabits(section, from: IndexSet(integer: index), to: index + 2) } : nil)
                 .padding(.vertical, todayLayout == "cards" ? 8 : 0)
         }
-        .onDrop(of: [ReorderDragSource.typeIdentifier],
-                delegate: ReorderDropDelegate(session: reorder, target: item.id, commit: saveHabitOrder))
         // A custom row fill replaces the system's selection highlight,
         // so the selected row has to draw its own.
         .listRowBackground(RoundedRectangle(cornerRadius: todayLayout == "cards" ? 18 : 0)

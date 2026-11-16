@@ -9,6 +9,7 @@ struct TimeSinceView: View {
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
     @Query(sort: \TimeSinceRecord.startedAt) private var records: [TimeSinceRecord]
     @State private var showsNew = false
+    @State private var selectedTracker: UUID?
     @State private var undoAction: TimeSinceUndoAction?
     @State private var error: String?
     @State private var feedback = 0
@@ -70,7 +71,7 @@ struct TimeSinceView: View {
                 }
             }
             .sheet(isPresented: $showsNew) { TimeSinceEditor(tracker: nil) }
-            .navigationDestination(for: UUID.self) { id in TimeSinceDetailView(trackerID: id) }
+            .navigationDestination(item: $selectedTracker) { id in TimeSinceDetailView(trackerID: id) }
             .sensoryFeedback(.impact(weight: .light), trigger: feedback)
             .alert("Couldn't update tracker", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
                 Button("Close", role: .cancel) {}
@@ -83,7 +84,7 @@ struct TimeSinceView: View {
             let index = trackers.firstIndex(where: { $0.id == tracker.id }) ?? 0
             ZStack(alignment: .topTrailing) {
             VStack(alignment: .leading, spacing: 16) {
-                NavigationLink(value: tracker.id) {
+                Button { selectedTracker = tracker.id } label: {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(alignment: .firstTextBaseline) {
                             Image(systemName: "leaf.fill").foregroundStyle(tracker.color.color(in: theme))
@@ -121,13 +122,12 @@ struct TimeSinceView: View {
             ReorderGrip(name: tracker.name, identifier: "reorder.tracker.\(tracker.id)",
                 id: tracker.id,
                 begin: { reorder.begin(tracker.id, among: trackers.map(\.id), reduceMotion: reduceMotion) },
-                end: { reorder.cancel() },
+                session: reorder,
+                commit: saveTrackerOrder,
                 moveUp: index > 0 ? { moveTrackers(from: IndexSet(integer: index), to: index - 1) } : nil,
                 moveDown: index + 1 < trackers.count ? { moveTrackers(from: IndexSet(integer: index), to: index + 2) } : nil)
                 .padding(10)
             }
-            .onDrop(of: [ReorderDragSource.typeIdentifier],
-                    delegate: ReorderDropDelegate(session: reorder, target: tracker.id, commit: saveTrackerOrder))
         }
     }
 

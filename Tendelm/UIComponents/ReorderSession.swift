@@ -4,6 +4,7 @@ import Observation
 /// Preview-only order. A valid drop is the only operation that writes storage.
 @MainActor @Observable
 final class ReorderSession {
+    @ObservationIgnored var handles: [UUID: WeakReorderHandle] = [:]
     var activeID: UUID?
     private(set) var original: [UUID] = []
     private(set) var preview: [UUID] = []
@@ -46,22 +47,5 @@ final class ReorderSession {
             original = []
             preview = []
         }
-    }
-}
-
-@MainActor
-struct ReorderDropDelegate: @preconcurrency DropDelegate {
-    let session: ReorderSession
-    let target: UUID
-    let commit: ([UUID]) -> Bool
-
-    func validateDrop(info: DropInfo) -> Bool { session.accepts(target) }
-    func dropEntered(info: DropInfo) { session.hover(over: target) }
-    func dropUpdated(info: DropInfo) -> DropProposal? {
-        DropProposal(operation: session.accepts(target) ? .move : .forbidden)
-    }
-    func performDrop(info: DropInfo) -> Bool {
-        guard session.accepts(target) else { return false }
-        return session.drop(commit: commit)
     }
 }

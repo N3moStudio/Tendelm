@@ -8,7 +8,8 @@ struct ReorderGrip: View {
     let identifier: String
     let id: UUID
     let begin: () -> Void
-    let end: () -> Void
+    let session: ReorderSession
+    let commit: ([UUID]) -> Bool
     var moveUp: (() -> Void)?
     var moveDown: (() -> Void)?
 
@@ -18,7 +19,7 @@ struct ReorderGrip: View {
             .foregroundStyle(Color.kadoForegroundSecondary)
             .frame(width: 44, height: 44)
             .contentShape(Rectangle())
-            .overlay { ReorderDragSource(id: id, begin: begin, end: end).accessibilityHidden(true) }
+            .overlay { ReorderDragSource(id: id, session: session, begin: begin, commit: commit).accessibilityHidden(true) }
             .accessibilityElement()
             .accessibilityLabel("Reorder \(name)")
             .accessibilityHint("Hold and drag up or down. Or use the Move up and Move down actions.")
