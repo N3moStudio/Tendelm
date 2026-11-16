@@ -10,6 +10,9 @@ struct ReorderDragSource: UIViewRepresentable {
     let commit: ([UUID]) -> Bool
 
     final class HandleView: UIView {
+        var attach: ((HandleView) -> Void)?
+        override func didMoveToWindow() { super.didMoveToWindow(); attach?(self) }
+        override func layoutSubviews() { super.layoutSubviews(); attach?(self) }
         var cell: UIView? {
             var ancestor = superview
             while let view = ancestor {
@@ -29,33 +32,47 @@ struct ReorderDragSource: UIViewRepresentable {
         hold.minimumPressDuration = 0.25
         hold.allowableMovement = 12
         hold.delegate = context.coordinator
-        view.addGestureRecognizer(hold)
+        context.coordinator.hold = hold
         context.coordinator.view = view
+        view.attach = { [weak coordinator = context.coordinator] handle in coordinator?.attach(to: handle) }
         session.handles[id] = WeakReorderHandle(view)
         return view
     }
     func updateUIView(_ view: HandleView, context: Context) {
         context.coordinator.source = self
+        context.coordinator.attach(to: view)
         session.handles[id] = WeakReorderHandle(view)
         if session.activeID == nil { context.coordinator.finishVisual(cancelled: true) }
     }
     static func dismantleUIView(_ view: HandleView, coordinator: Coordinator) {
         coordinator.finishVisual(cancelled: true)
+        if let hold = coordinator.hold { hold.view?.removeGestureRecognizer(hold) }
+        view.attach = nil
     }
 
     final class Coordinator: NSObject, UIGestureRecognizerDelegate {
         var source: ReorderDragSource
         weak var view: HandleView?
         weak var scroll: UIScrollView?
+        var hold: UILongPressGestureRecognizer?
         var lifted: UIView?
         var finger = CGPoint.zero
         var offset = CGPoint.zero
         var displayLink: CADisplayLink?
         init(_ source: ReorderDragSource) { self.source = source }
 
-        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer) -> Bool {
-            otherGestureRecognizer is UILongPressGestureRecognizer
+        func attach(to handle: HandleView) {
+            guard let host = handle.cell, let hold, hold.view !== host else { return }
+            hold.view?.removeGestureRecognizer(hold)
+            host.addGestureRecognizer(hold)
         }
+
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+            guard let view else { return false }
+            return view.bounds.contains(touch.location(in: view))
+        }
+
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer) -> Bool { true }
 
         @objc func changed(_ hold: UILongPressGestureRecognizer) {
             guard let view, let window = view.window else { finishVisual(cancelled: true); return }

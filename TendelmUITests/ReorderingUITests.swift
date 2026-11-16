@@ -59,7 +59,10 @@ final class ReorderingUITests: TendelmUITestCase {
         guard ids.count >= 2 else { XCTFail("Need two visible items"); return }
         let first = app.descendants(matching: .any)[ids[0]].firstMatch
         let second = app.descendants(matching: .any)[ids[1]].firstMatch
-        second.press(forDuration: 0.8, thenDragTo: first)
+        capture(app, "before-handle-drag")
+        second.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .press(forDuration: 0.8, thenDragTo: first.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)))
+        capture(app, "after-handle-drag")
         XCTAssertFalse(app.buttons["habit.delete"].exists)
         XCTAssertFalse(app.buttons["tracker.delete"].exists)
     }
