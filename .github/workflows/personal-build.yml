@@ -1,6 +1,11 @@
 name: Tendelm IPA
 on:
   workflow_dispatch:
+    inputs:
+      run_validation:
+        description: Run the full simulator suite (reuse documented unchanged-source results when false)
+        type: boolean
+        default: true
 permissions:
   contents: read
 concurrency:
@@ -36,6 +41,7 @@ jobs:
           retention-days: 14
 
   validation:
+    if: ${{ inputs.run_validation }}
     runs-on: macos-26
     timeout-minutes: 60
     steps:
